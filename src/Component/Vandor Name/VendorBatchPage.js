@@ -995,7 +995,7 @@ const getRowClassName = useCallback(
                           )}
                       </td>
                       <td className="align-middle">
-                        {invoice.remarks || "No remark"}
+                        {invoice.remarks || ""}
                         {getRowClassName(invoice) === "row-yellow" &&
                           !invoice.remarks && (
                             <span className="text-danger ms-1">*</span>
@@ -1391,31 +1391,6 @@ const getRowClassName = useCallback(
               )}
             </Form.Group>
 
-            {/* <Form.Group className="mb-3" controlId="formFile">
-              <Form.Label
-                className="btn btn-secondary mb-0"
-                style={{ backgroundColor: "#8000d7", border: "none" }}
-                onClick={() => modalFileInputRef.current.click()}
-              >
-                Upload File
-              </Form.Label>
-
-              <Form.Control
-                type="file"
-                id="fileUpload"
-                name="file"
-                onChange={handleModalFileChange}
-                style={{ display: "none" }}
-                ref={modalFileInputRef}
-                accept="*"
-              />
-
-              {editedCharges.fileName && (
-                <div className="mt-2 text-muted">
-                  Selected File: {editedCharges.fileName}
-                </div>
-              )}
-            </Form.Group> */}
             <Form.Group className="mb-3" controlId="formFile">
               <Form.Label
                 className="btn btn-secondary mb-0"

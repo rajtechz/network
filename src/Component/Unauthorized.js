@@ -1,11 +1,9 @@
-// src/Component/Unauthorized.js
+
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-
 const Unauthorized = () => {
   const navigate = useNavigate();
-
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 10, textAlign: 'center' }}>
       <Typography
@@ -26,8 +24,7 @@ const Unauthorized = () => {
         color="primary"
         sx={{ backgroundColor: '#BF125D' }}
         size="large"
-        onClick={() => navigate('/login')}
-      >
+        onClick={() => navigate('/login')}>
         Back to Login
       </Button>
     </Box>
