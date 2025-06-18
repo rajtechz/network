@@ -445,8 +445,31 @@ export const updateInvoiceStatusNetworkForApproved = async ({
     const response = await axios.post(
       `${BASE_URL}/UpdateInvoiceStatusNetwork`,
       {
-        batchNo: batchNo.toString(), // Changed from batchNo to batchMo
-        invoiceStatus, // Keep this as is
+        batchNo: batchNo.toString(), 
+        invoiceStatus, 
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating invoice status:", error);
+    throw error;
+  }
+};
+export const UpdateInvoicePartialNetwork = async ({
+  batchNo,
+  invoiceStatus,
+}) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/Update_InvoicePartialNetwork`,
+      {
+        batchNo: batchNo.toString(), 
+        invoiceStatus, 
       },
       {
         headers: {

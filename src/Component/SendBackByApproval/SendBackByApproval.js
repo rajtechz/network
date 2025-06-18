@@ -4,7 +4,7 @@ import { Dropdown, Table, Button } from "react-bootstrap";
 import { FaChevronDown } from "react-icons/fa";
 import {
   BASE_URL,
-  GetAllApprovalBatchDatafromSubmit,
+  GetAllApprovalinvoicefromSubmit,
   updateInvoiceStatusNetworkForApproved,
 } from "../../api/api";
 import { toast, ToastContainer } from "react-toastify";
@@ -31,7 +31,7 @@ function SendBackByApproval() {
   // useEffect(() => {
   //   const fetchData = async () => {
   //     try {
-  //       const response = await GetAllApprovalBatchDatafromSubmit();
+  //       const response = await GetAllApprovalinvoicefromSubmit();
   //       console.log("API Response:", response);
   //       if (response?.dataitems) {
   //         setInvoices(response.dataitems);
@@ -246,7 +246,7 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
 
     if (newStatus === "Approve") {
       navigate("/approvalBatchPage", {
-        state: { batchData: selectedInvoice },
+        state: { invoice: selectedInvoice },
       });
     }
   } catch (err) {
@@ -372,7 +372,7 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
                               className="text-purple review_fa_eye"
                               onClick={() => {
                                 navigate("/sendBackdetailPage", {
-                                  state: { batchData: invoice },
+                                  state: { invoice: invoice },
                                 });
                               }}
                             />

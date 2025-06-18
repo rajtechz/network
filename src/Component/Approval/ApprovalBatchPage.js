@@ -1,1440 +1,30 @@
-
-// import React, { useState, useRef, useEffect, useCallback } from "react";
-// import { Button, Form, Table } from "react-bootstrap";
-// import {
-//   FaEye,
-//   FaDownload,
-//   FaTrash,
-//   FaUpload,
-//   FaEdit,
-//   FaSave,
-//   FaTimes,
-// } from "react-icons/fa";
-// import Papa from "papaparse";
-// import { useNavigate, useLocation } from "react-router-dom";
-// import { saveAs } from "file-saver";
-// import { IconButton } from "@mui/material";
-
-// const BASE_URL = "https://mintflix.live:8086/api/Auto";
-
-// function ApprovalBatchPage() {
-//   const navigate = useNavigate();
-//   const location = useLocation();
-//   const batchData = location.state?.batchData || null;
-//   const fileInputRef = useRef();
-//   const [invoices, setInvoices] = useState([]);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const [isGSTApplied, setIsGSTApplied] = useState(false);
-//   const [apiData, setApiData] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [uploadedFile, setUploadedFile] = useState(null);
-//   const [fileType, setFileType] = useState("");
-//   const [existingInvoice, setExistingInvoice] = useState({
-//     url: null,
-//     fileName: null,
-//     fileType: null,
-//   });
-//   const [invoiceNo, setInvoiceNo] = useState("");
-//   const [caseCount, setCaseCount] = useState("");
-//   const [invoiceDate, setInvoiceDate] = useState("");
-//   const [invoiceAmount, setInvoiceAmount] = useState("");
-//   const [amountError, setAmountError] = useState("");
-//   const [hoveredRow, setHoveredRow] = useState(null);
-//   const [fieldErrors, setFieldErrors] = useState({
-//     invoiceNo: false,
-//     invoiceDate: false,
-//     invoiceAmount: false,
-//     caseCount: false,
-//     invoiceFile: false,
-//   });
-//   const [editingRow, setEditingRow] = useState(null);
-//   const [editValues, setEditValues] = useState({});
-
-//   const itemsPerPage = 8;
-//   const totalPages = Math.ceil(invoices.length / itemsPerPage);
-//   const indexOfLastItem = currentPage * itemsPerPage;
-//   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-//   const currentInvoices = invoices.slice(indexOfFirstItem, indexOfLastItem);
-//   const selectedAAno = invoices.filter((invoice) => invoice.isChecked);
-
-//   const totalRepairCharges = currentInvoices.reduce((total, invoice) => {
-//     const cleanedAmount = invoice.repairCharges?.toString().replace(/,/g, "");
-//     const amount = parseFloat(cleanedAmount);
-//     return total + (isNaN(amount) ? 0 : amount);
-//   }, 0);
-
-//   const totalServiceCharges = currentInvoices.reduce((total, invoice) => {
-//     const cleanedAmount = invoice.serviceCharges?.toString().replace(/,/g, "");
-//     const amount = parseFloat(cleanedAmount);
-//     return total + (isNaN(amount) ? 0 : amount);
-//   }, 0);
-
-//   const grossAmount = currentInvoices.reduce((total, invoice) => {
-//     const cleanedAmount = invoice.total?.toString().replace(/,/g, "");
-//     const amount = parseFloat(cleanedAmount);
-//     return total + (isNaN(amount) ? 0 : amount);
-//   }, 0);
-
-//   const finalAmount = isGSTApplied
-//     ? (grossAmount * 1.18).toFixed(2)
-//     : grossAmount.toFixed(2);
-//   const gstAmount = isGSTApplied
-//     ? (grossAmount * 0.18).toFixed(2)
-//     : (0).toFixed(2);
-
-//   useEffect(() => {
-//     if (!batchData) {
-//       navigate("/");
-//       return;
-//     }
-//     console.log("row data", batchData);
-//     setCaseCount(batchData.caseCount || "");
-//     setInvoiceNo(batchData.invoiceNo || "");
-//     setInvoiceDate(batchData.invoiceDate || "");
-//     setInvoiceAmount(batchData.invoiceAmount || "");
-//     if (batchData.invoice) {
-//       const fileName = batchData.invoice.split("/").pop() || "invoice.pdf";
-//       const fileType = fileName.split(".").pop()?.toLowerCase() || "";
-//       setExistingInvoice({
-//         url: batchData.invoice,
-//         fileName: fileName,
-//         fileType: fileType,
-//       });
-//       setFileType(fileType);
-//     }
-//   }, [batchData, navigate]);
-
-//   useEffect(() => {
-//     if (!batchData) return;
-//     setLoading(true);
-//     if (batchData.aaNo) {
-//       const aaNumbers = batchData.aaNo.split(",").map((val) => val.trim());
-//       aaNumbers.forEach((aaNo, index) => {
-//         console.log(`aaNo ${index + 1}: ${aaNo}`);
-//       });
-
-//       Promise.all(
-//         aaNumbers.map((aaNo) =>
-//           fetch(`${BASE_URL}/GetGadgetCaseDetailsByAA?aaNumbers=${aaNo}`)
-//             .then((response) => {
-//               if (!response.ok) {
-//                 console.error(
-//                   `HTTP error for aaNo ${aaNo}: ${response.status}`
-//                 );
-//                 return { status: false, aA_Number: aaNo, dataItems: [] };
-//               }
-//               return response.json();
-//             })
-//             .then((responseData) => {
-//               if (!responseData || responseData.status === false) {
-//                 return { status: false, aA_Number: aaNo, dataItems: [] };
-//               }
-//               return {
-//                 status: responseData.status,
-//                 aA_Number: aaNo,
-//                 dataItems: Array.isArray(responseData.dataItems)
-//                   ? responseData.dataItems
-//                   : [],
-//               };
-//             })
-//             .catch((error) => {
-//               console.error(`Error fetching API data for ${aaNo}:`, error);
-//               return { status: false, aA_Number: aaNo, dataItems: [] };
-//             })
-//         )
-//       )
-//         .then((results) => {
-//           const combinedData = results.filter((item) => item);
-//           setApiData(combinedData);
-//         })
-//         .catch((error) => {
-//           console.error("Error in Promise.all:", error);
-//           setApiData([]);
-//         })
-//         .finally(() => setLoading(false));
-//     } else {
-//       setLoading(false);
-//     }
-//   }, [batchData]);
-
-//   useEffect(() => {
-//     if (!batchData) return;
-//     const splitData = (key) =>
-//       batchData[key]
-//         ?.split(",")
-//         .map((val) => (val === "NULL" ? "-" : val.trim())) || [];
-//     const invoicesArray = splitData("aaNo").map((_, i) => ({
-//       aA_Number: splitData("aaNo")[i],
-//       imeiNumber: splitData("imeiNo")[i],
-//       creationDate: batchData.creationDate || "",
-//       closureDate: batchData.closureDate || "",
-//       customerName: splitData("customerName")[i],
-//       serviceType: splitData("serviceType")[i],
-//       brand: splitData("brand")[i],
-//       makeModel: splitData("makeModel")[i],
-//       repairCharges: splitData("repairCharges")[i]
-//         ? parseFloat(splitData("repairCharges")[i]).toFixed(2)
-//         : "0.00",
-//       serviceCharges: splitData("serviceCharges")[i]
-//         ? parseFloat(splitData("serviceCharges")[i]).toFixed(2)
-//         : "0.00",
-//       chargesInclGST: splitData("chargesInclGST")[i]
-//         ? parseFloat(splitData("chargesInclGST")[i]).toFixed(2)
-//         : "0.00",
-//       total: splitData("total")[i]
-//         ? parseFloat(splitData("total")[i]).toFixed(2)
-//         : "0.00",
-//       invoiceStatus: batchData.invoiceStatus || "-",
-//       sellingPartner: splitData("sellingPartner")[i],
-//       batchNo: batchData.batchNo || "",
-//       isChecked: true,
-//       remarks: splitData("remarks")[i] || "",
-//     }));
-//     setInvoices(invoicesArray);
-//   }, [batchData]);
-
-//   const normalize = (value) =>
-//     (value ? value.toString().trim() : "").toLowerCase();
-
-//   const getRowClassName = useCallback(
-//     (invoice) => {
-//       if (!Array.isArray(apiData) || apiData.length === 0) return "row-red";
-//       const matchedData = apiData.find(
-//         (item) => item.aA_Number === invoice.aA_Number
-//       );
-//       if (!matchedData || matchedData.status === false) return "row-red";
-//       if (
-//         matchedData.status === true &&
-//         Array.isArray(matchedData.dataItems) &&
-//         matchedData.dataItems.length > 0
-//       ) {
-//         const dataItem = matchedData.dataItems[0];
-//         if (
-//           normalize(dataItem.serviceType) !== normalize(invoice.serviceType) ||
-//           normalize(dataItem.repairCharges) !==
-//             normalize(invoice.repairCharges) ||
-//           normalize(dataItem.serviceCharges) !==
-//             normalize(invoice.serviceCharges) ||
-//           normalize(dataItem.total) !== normalize(invoice.total) ||
-//           normalize(dataItem.imeiNumber) !== normalize(invoice.imeiNumber) ||
-//           normalize(dataItem.sellingPartner) !==
-//             normalize(invoice.sellingPartner)
-//         ) {
-//           return "row-yellow";
-//         }
-//         return "row-green";
-//       }
-//       return "row-red";
-//     },
-//     [apiData]
-//   );
-
-//   const getDifferencesData = (invoice) => {
-//     const matchedData = apiData.find(
-//       (item) => item.aA_Number === invoice.aA_Number
-//     );
-//     if (!matchedData || matchedData.status === false)
-//       return [{ field: "AA Number", table: invoice.aA_Number, api: "-" }];
-//     const dataItem = matchedData.dataItems[0] || {};
-//     const differences = [];
-//     if (normalize(dataItem.serviceType) !== normalize(invoice.serviceType)) {
-//       differences.push({
-//         field: "Service Type",
-//         table: invoice.serviceType || "-",
-//         api: dataItem.serviceType || "-",
-//       });
-//     }
-//     if (normalize(dataItem.imeiNumber) !== normalize(invoice.imeiNumber)) {
-//       differences.push({
-//         field: "IMEI Number",
-//         table: invoice.imeiNumber || "-",
-//         api: dataItem.imeiNumber || "-",
-//       });
-//     }
-//     if (
-//       normalize(dataItem.sellingPartner) !== normalize(invoice.sellingPartner)
-//     ) {
-//       differences.push({
-//         field: "Selling Partner",
-//         table: invoice.sellingPartner || "-",
-//         api: dataItem.sellingPartner || "-",
-//       });
-//     }
-//     if (
-//       normalize(dataItem.repairCharges) !== normalize(invoice.repairCharges)
-//     ) {
-//       differences.push({
-//         field: "Repair Charges",
-//         table: invoice.repairCharges || "-",
-//         api: dataItem.repairCharges || "-",
-//       });
-//     }
-//     if (
-//       normalize(dataItem.serviceCharges) !== normalize(invoice.serviceCharges)
-//     ) {
-//       differences.push({
-//         field: "Service Charges",
-//         table: invoice.serviceCharges || "-",
-//         api: dataItem.serviceCharges || "-",
-//       });
-//     }
-//     if (
-//       normalize(dataItem.chargesInclGST) !== normalize(invoice.chargesInclGST)
-//     ) {
-//       differences.push({
-//         field: "GST Charges",
-//         table: invoice.chargesInclGST || "-",
-//         api: dataItem.chargesInclGST || "-",
-//       });
-//     }
-//     if (normalize(dataItem.total) !== normalize(invoice.total)) {
-//       differences.push({
-//         field: "Total Amount",
-//         table: invoice.total || "-",
-//         api: dataItem.total || "-",
-//       });
-//     }
-//     return differences.length > 0 ? differences : [];
-//   };
-
-//   const handleDelete = (index) => {
-//     const updatedInvoices = invoices.filter((_, i) => i !== index);
-//     setInvoices(updatedInvoices);
-//   };
-
-//   const handleCheckboxChange = (invoiceId) => {
-//     setInvoices((prevInvoices) => {
-//       if (invoiceId === "all") {
-//         // Toggle all invoices based on the current state of the header checkbox
-//         const allChecked = prevInvoices.every((invoice) => invoice.isChecked);
-//         return prevInvoices.map((invoice) => ({
-//           ...invoice,
-//           isChecked: !allChecked,
-//         }));
-//       }
-//       // Toggle individual invoice
-//       return prevInvoices.map((invoice) =>
-//         invoice.aA_Number === invoiceId
-//           ? { ...invoice, isChecked: !invoice.isChecked }
-//           : invoice
-//       );
-//     });
-//   };
-
-//   const handleClick = () => {
-//     fileInputRef.current.click();
-//   };
-
-//   const handleFileChange = (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-//     const extension = file.name.split(".").pop().toLowerCase();
-//     if (
-//       existingInvoice.fileName &&
-//       file.name.toLowerCase() === existingInvoice.fileName.toLowerCase()
-//     ) {
-//       alert(
-//         "This file is already associated with the invoice. Please upload a different file to update."
-//       );
-//       fileInputRef.current.value = "";
-//       return;
-//     }
-//     setFileType(extension);
-//     setUploadedFile(file);
-//     setFieldErrors((prev) => ({ ...prev, invoiceFile: false }));
-//     if (extension === "csv") {
-//       Papa.parse(file, {
-//         header: true,
-//         complete: (results) => {
-//           const row = results.data[0];
-//           setInvoiceNo(row["Invoice No"] || "");
-//           setInvoiceDate(row["Invoice Date"] || "");
-//           setInvoiceAmount(row["Invoice Amount"] || "");
-//           setCaseCount(row["Case Count"] || caseCount);
-//         },
-//         error: (err) => {
-//           console.error("CSV parsing error:", err);
-//           alert("Failed to read CSV file.");
-//         },
-//       });
-//     } else {
-//       console.log("Non-CSV file uploaded:", file.name);
-//     }
-//   };
-
-//   const downloadCSV = () => {
-//     const headers = [
-//       "AA Number",
-//       "IMEI Number",
-//       "Creation Date",
-//       "Closure Date",
-//       "Customer Name",
-//       "Service Type",
-//       "Brand",
-//       "Make Model",
-//       "Repair Charges",
-//       "Service Charges",
-//       "GST Charges",
-//       "Total",
-//       "Remarks",
-//     ];
-//     const today = new Date().toLocaleDateString("en-GB");
-//     const data = currentInvoices.map((invoice) => ({
-//       aaNumber: invoice.aA_Number || "",
-//       imeiNumber: invoice.imeiNumber || "",
-//       creationDate: today,
-//       closureDate: invoice.closureDate || "",
-//       customerName: invoice.customerName || "",
-//       serviceType: invoice.serviceType || "",
-//       brand: invoice.brand || "",
-//       makeModel: invoice.makeModel || "",
-//       repairCharges: invoice.repairCharges || "0.00",
-//       serviceCharges: invoice.serviceCharges || "0.00",
-//       chargesInclGST: invoice.chargesInclGST || "0.00",
-//       total: invoice.total || "0.00",
-//       remarks: invoice.remarks || "",
-//     }));
-//     const csv = Papa.unparse({
-//       fields: headers,
-//       data: data.map((row) => Object.values(row)),
-//     });
-//     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-//     saveAs(blob, "invoice-list.csv");
-//   };
-
-//   const handleEdit = (invoice) => {
-//     setEditingRow(invoice.aA_Number);
-//     setEditValues({
-//       serviceCharges: invoice.serviceCharges || "0.00",
-//       repairCharges: invoice.repairCharges || "0.00",
-//       chargesInclGST: invoice.chargesInclGST || "0.00",
-//       remarks: invoice.remarks || "",
-//     });
-//   };
-
-//   const handleSaveEdit = (aA_Number) => {
-//     const parsedServiceCharges = parseFloat(editValues.serviceCharges);
-//     const parsedRepairCharges = parseFloat(editValues.repairCharges);
-//     const parsedChargesInclGST = parseFloat(editValues.chargesInclGST);
-//     const remarks = editValues.remarks?.trim() || "";
-
-//     if (
-//       isNaN(parsedServiceCharges) ||
-//       parsedServiceCharges < 0 ||
-//       isNaN(parsedRepairCharges) ||
-//       parsedRepairCharges < 0 ||
-//       isNaN(parsedChargesInclGST) ||
-//       parsedChargesInclGST < 0
-//     ) {
-//       alert("Charges must be valid non-negative numbers.");
-//       return;
-//     }
-
-//     const formattedServiceCharges = parsedServiceCharges.toFixed(2);
-//     const formattedRepairCharges = parsedRepairCharges.toFixed(2);
-//     const formattedChargesInclGST = parsedChargesInclGST.toFixed(2);
-//     const formattedTotal = (
-//       parsedServiceCharges +
-//       parsedRepairCharges +
-//       parsedChargesInclGST
-//     ).toFixed(2);
-
-//     setInvoices((prevInvoices) =>
-//       prevInvoices.map((invoice) =>
-//         invoice.aA_Number === aA_Number
-//           ? {
-//               ...invoice,
-//               serviceCharges: formattedServiceCharges,
-//               repairCharges: formattedRepairCharges,
-//               chargesInclGST: formattedChargesInclGST,
-//               total: formattedTotal,
-//               remarks: remarks,
-//             }
-//           : invoice
-//       )
-//     );
-//     setEditingRow(null);
-//     setEditValues({});
-//   };
-
-//   const handleCancelEdit = () => {
-//     setEditingRow(null);
-//     setEditValues({});
-//   };
-
-//   const handleEditInputChange = (e) => {
-//     const { name, value } = e.target;
-//     setEditValues((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleDownloadInvoice = () => {
-//     const invoiceUrl = batchData?.invoice;
-//     if (!invoiceUrl) {
-//       alert("No invoice URL available for download.");
-//       return;
-//     }
-
-//     const fileName = invoiceUrl.split("/").pop() || "invoice.pdf";
-//     const link = document.createElement("a");
-//     link.href = invoiceUrl;
-//     link.download = fileName;
-//     link.target = "_blank";
-//     document.body.appendChild(link);
-//     link.click();
-//     document.body.removeChild(link);
-//   };
-
-//   const handleSubmit = async () => {
-//     try {
-//       const selected = invoices.filter((inv) => inv.isChecked);
-//       if (selected.length === 0) {
-//         alert("Please select at least one invoice.");
-//         return;
-//       }
-
-//       if (uploadedFile || !existingInvoice.url) {
-//         const newErrors = {
-//           invoiceNo: !invoiceNo.trim(),
-//           invoiceDate: !invoiceDate,
-//           invoiceAmount: !invoiceAmount.trim(),
-//           caseCount: !caseCount.trim(),
-//           invoiceFile: !uploadedFile && !existingInvoice.url,
-//         };
-//         setFieldErrors(newErrors);
-//         if (Object.values(newErrors).some(Boolean)) {
-//           alert(
-//             newErrors.invoiceFile
-//               ? "Please upload an invoice file."
-//               : "Please fill all required invoice fields."
-//           );
-//           return;
-//         }
-
-//         const parsedInvoiceAmount = parseFloat(invoiceAmount);
-//         if (isNaN(parsedInvoiceAmount) || parsedInvoiceAmount <= 0) {
-//           setFieldErrors((prev) => ({ ...prev, invoiceAmount: true }));
-//           setAmountError("Invoice Amount must be a valid positive number.");
-//           alert("Invoice Amount must be a valid positive number.");
-//           return;
-//         }
-
-//         if (Math.abs(parsedInvoiceAmount - parseFloat(finalAmount)) > 0.01) {
-//           setFieldErrors((prev) => ({ ...prev, invoiceAmount: true }));
-//           setAmountError("Invoice Amount and Final Amount do not match.");
-//           alert("Invoice Amount and Final Amount do not match.");
-//           return;
-//         } else {
-//           setAmountError("");
-//         }
-
-//         const parsedCaseCount = parseInt(caseCount);
-//         if (isNaN(parsedCaseCount) || parsedCaseCount <= 0) {
-//           setFieldErrors((prev) => ({ ...prev, caseCount: true }));
-//           alert("Case Count must be a valid positive number.");
-//           return;
-//         }
-
-//         if (parsedCaseCount !== selectedAAno.length) {
-//           setFieldErrors((prev) => ({ ...prev, caseCount: true }));
-//           alert("Case Count does not match the number of selected invoices.");
-//           return;
-//         }
-
-//         const today = new Date().toISOString().split("T")[0];
-//         if (invoiceDate > today) {
-//           setFieldErrors((prev) => ({ ...prev, invoiceDate: true }));
-//           alert("Invoice Date cannot be a future date.");
-//           return;
-//         }
-//       } else {
-//         const confirmProceed = window.confirm(
-//           "Using existing invoice. Do you want to continue without uploading a new file?"
-//         );
-//         if (!confirmProceed) {
-//           return;
-//         }
-//       }
-
-//       const formData = new FormData();
-//       const extract = (key) =>
-//         selected.map((item) => item[key] || "").join(",");
-//       formData.append("AANo", extract("aA_Number"));
-//       formData.append("IMEINo", extract("imeiNumber"));
-//       formData.append("CreationDate", extract("creationDate"));
-//       formData.append("ClosureDate", extract("closureDate"));
-//       formData.append("CustomerName", extract("customerName"));
-//       formData.append("VendorName", batchData?.vendorName || "");
-//       formData.append("finalAmount", finalAmount);
-//       formData.append("TotalRepairCharges", totalRepairCharges.toFixed(2));
-//       formData.append("TotalServiceCharges", totalServiceCharges.toFixed(2));
-//       formData.append("BatchNo", batchData?.batchNo || "");
-//       formData.append("ServiceType", extract("serviceType"));
-//       formData.append("Brand", extract("brand"));
-//       formData.append("MakeModel", extract("makeModel"));
-//       formData.append("RepairCharges", extract("repairCharges"));
-//       formData.append("ServiceCharges", extract("serviceCharges"));
-//       formData.append("ChargesInclGST", extract("chargesInclGST"));
-//       formData.append("Total", extract("total"));
-//       formData.append("SellingPartner", extract("sellingPartner"));
-//       formData.append(
-//         "InvoiceStatus",
-//         uploadedFile || existingInvoice.url
-//           ? "Invoice Uploaded"
-//           : extract("invoiceStatus")
-//       );
-//       formData.append("InvoiceNo", invoiceNo || "");
-//       formData.append("InvoiceDate", invoiceDate || "");
-//       formData.append("InvoiceAmount", invoiceAmount || "");
-//       formData.append("CaseCount", caseCount || selected.length.toString());
-//       formData.append("IsGSTApplied", isGSTApplied ? "true" : "false");
-//       if (uploadedFile) {
-//         formData.append("Invoice", uploadedFile, uploadedFile.name);
-//       } else if (existingInvoice.url) {
-//         formData.append("ExistingInvoiceUrl", existingInvoice.url);
-//       }
-
-//       console.log("FormData payload:");
-//       for (let [key, value] of formData.entries()) {
-//         console.log(`${key}:`, value);
-//       }
-
-//       setLoading(true);
-//       const response = await fetch(`${BASE_URL}/SaveApprovalBatchData`, {
-//         method: "POST",
-//         body: formData,
-//       });
-//       const result = await response.json();
-//       setLoading(false);
-//       console.log("API response:", result);
-
-//       if (!response.ok) {
-//         alert("Error submitting batch. Check the payload or try again.");
-//         return;
-//       }
-
-//       alert("Batch submitted successfully.");
-//       navigate(
-//         invoiceNo || uploadedFile || existingInvoice.url ? "/approval" : "/"
-//       );
-//     } catch (error) {
-//       console.error("Submission failed:", error);
-//       setLoading(false);
-//       alert("Submission failed. Please check console for details.");
-//     }
-//   };
-
-//   const handleSendBack = async () => {
-//     try {
-//       const selected = invoices.filter((inv) => inv.isChecked);
-//       if (selected.length === 0) {
-//         alert("Please select at least one invoice to send back.");
-//         return;
-//       }
-
-//       // Validate that there is a reason or comment for sending back
-//       const reason = prompt("Please provide a reason for sending back:");
-//       if (!reason || !reason.trim()) {
-//         alert("A reason is required to send back the batch.");
-//         return;
-//       }
-
-//       const formData = new FormData();
-//       const extract = (key) =>
-//         selected.map((item) => item[key] || "").join(",");
-//       formData.append("AANo", extract("aA_Number"));
-//       formData.append("BatchNo", batchData?.batchNo || "");
-//       formData.append("VendorName", batchData?.vendorName || "");
-//       formData.append("Reason", reason.trim());
-//       formData.append("InvoiceStatus", "Sent Back");
-//       if (existingInvoice.url) {
-//         formData.append("ExistingInvoiceUrl", existingInvoice.url);
-//       }
-
-//       console.log("Send Back FormData payload:");
-//       for (let [key, value] of formData.entries()) {
-//         console.log(`${key}:`, value);
-//       }
-
-//       setLoading(true);
-//       const response = await fetch(`${BASE_URL}/SendBackApprovalBatch`, {
-//         method: "POST",
-//         body: formData,
-//       });
-//       const result = await response.json();
-//       setLoading(false);
-//       console.log("Send Back API response:", result);
-
-//       if (!response.ok) {
-//         alert("Error sending back batch. Check the payload or try again.");
-//         return;
-//       }
-
-//       alert("Batch sent back successfully.");
-//       navigate("/approval");
-//     } catch (error) {
-//       console.error("Send Back failed:", error);
-//       setLoading(false);
-//       alert("Send Back failed. Please check console for details.");
-//     }
-//   };
-
-//   return (
-//     <>
-//       <style>
-//         {`
-//           .row-red {
-//             background-color: #ffe6e6;
-//             color: #d32f2f;
-//           }
-//           .row-yellow {
-//             background-color: #fff9c4;
-//           }
-//           .row-green {
-//             background-color: #e8f5e9;
-//           }
-//           .approval-page-container {
-//             padding: 20px;
-//             max-width: 1400px;
-//             margin: 0 auto;
-//           }
-//           .batch_popup_upload {
-//             background-color: #8000d7;
-//             color: white;
-//             border: none;
-//             padding: 10px 16px;
-//             border-radius: 8px;
-//             font-weight: 500;
-//             font-size: 14px;
-//             display: flex;
-//             align-items: center;
-//             cursor: pointer;
-//           }
-//           .batch_popup_upload:hover {
-//             background-color: #6b00b8;
-//           }
-//           .table-container {
-//             overflow-x: auto;
-//             overflow-y: auto;
-//             max-height: 400px;
-//             width: 100%;
-//           }
-//           .network_table {
-//             min-width: 1200px;
-//           }
-//           .network_table th,
-//           .network_table td {
-//             padding: 8px;
-//             vertical-align: middle;
-//             white-space: nowrap;
-//           }
-//           .vendore_invoice_status {
-//             white-space: nowrap;
-//           }
-//         `}
-//       </style>
-//       <div className="approval-page-container">
-//         <h2 className="mb-4">Upload Invoice</h2>
-//         <div className="mt-4">
-//           <div className="netwrok_table_main_content">
-//             <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-//               <div className="d-flex flex-wrap gap-4 align-items-center">
-//                 {batchData?.batchNo && (
-//                   <div className="fw-semibold">
-//                     <span>Batch No: </span>
-//                     <span className="text-primary">{batchData.batchNo}</span>
-//                   </div>
-//                 )}
-//                 {batchData?.vendorName && (
-//                   <div className="fw-semibold">
-//                     <span>Vendor: </span>
-//                     <span className="text-success">{batchData.vendorName}</span>
-//                   </div>
-//                 )}
-//               </div>
-//               <div className="d-flex gap-2">
-//                 {existingInvoice.url && (
-//                   <button
-//                     className="batch_popup_upload"
-//                     onClick={handleDownloadInvoice}
-//                   >
-//                     <FaDownload /> <span className="ms-2">Download Invoice</span>
-//                   </button>
-//                 )}
-//                 <button className="batch_popup_upload" onClick={handleClick}>
-//                   <FaUpload />{" "}
-//                   <span className="ms-2">
-//                     {existingInvoice.url ? "Update Invoice" : "Upload Invoice"}
-//                   </span>
-//                 </button>
-//                 <input
-//                   type="file"
-//                   ref={fileInputRef}
-//                   onChange={handleFileChange}
-//                   style={{ display: "none" }}
-//                   accept="*"
-//                 />
-//               </div>
-//             </div>
-//             <div className="text-end upload_file_ext_name mb-3">
-//               {existingInvoice.url && !uploadedFile && (
-//                 <div style={{ fontWeight: "bold", color: "green" }}>
-//                   Existing Invoice: {existingInvoice.fileName} (Type:{" "}
-//                   {existingInvoice.fileType})
-//                 </div>
-//               )}
-//               {uploadedFile && fileType && (
-//                 <div style={{ fontWeight: "bold", color: "green" }}>
-//                   Uploaded File: {uploadedFile.name} (Type: {fileType})
-//                 </div>
-//               )}
-//               {fieldErrors.invoiceFile && (
-//                 <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
-//                   Please upload an invoice file.
-//                 </div>
-//               )}
-//             </div>
-//             <div className="table-container mt-3">
-//               <Table className="bg-white text-center border-0 network_table">
-//                 <thead
-//                   style={{
-//                     backgroundColor: "#EEF4FF",
-//                     position: "sticky",
-//                     top: 0,
-//                     zIndex: 1,
-//                   }}
-//                 >
-//                   <tr className="text-dark fw-semibold table_th_border">
-//                     <th className="border-start d-flex gap-2">
-//                       <Form.Check
-//                         type="checkbox"
-//                         checked={invoices.length > 0 && invoices.every((invoice) => invoice.isChecked)}
-//                         onChange={() => handleCheckboxChange("all")}
-//                       />
-//                       Select
-//                     </th>
-//                     <th>View</th>
-//                     <th>Edit</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>AA No</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>IMEI No</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Creation Date</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Closure Date</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Customer Name</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Service Type</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Brand</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Make Model</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Repair Charges</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Service Charges</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Total</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Invoice Status</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Mismatched Data</th>
-//                     <th style={{ whiteSpace: "nowrap" }}>Remarks</th>
-//                     <th className="border-end" style={{ whiteSpace: "nowrap" }}>
-//                       Action
-//                     </th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {loading && (
-//                     <tr>
-//                       <td colSpan="19" className="text-center py-3">
-//                         Validating data...
-//                       </td>
-//                     </tr>
-//                   )}
-//                   {!loading &&
-//                     currentInvoices.map((invoice, index) => (
-//                       <tr
-//                         key={
-//                           invoice.aA_Number || `${invoice.aA_Number}-${index}`
-//                         }
-//                         className={`text-center border-bottom network_td_item ${getRowClassName(
-//                           invoice
-//                         )}`}
-//                         aria-label={
-//                           getRowClassName(invoice).replace("row-", "") + " row"
-//                         }
-//                       >
-//                         <td className="border-start align-middle">
-//                           <Form.Check
-//                             type="checkbox"
-//                             checked={invoice.isChecked}
-//                             onChange={() =>
-//                               handleCheckboxChange(invoice.aA_Number)
-//                             }/>
-//                         </td>
-//                         <td className="align-middle">
-//                           <FaEye
-//                             size={20}
-//                             className="text-purple review_fa_eye"
-//                             style={{ cursor: "pointer" }}
-//                             onClick={() =>
-//                               navigate("/invoice-template", {
-//                                 state: { aaNumber: invoice.aA_Number },
-//                               })
-//                             }
-//                           />
-//                         </td>
-//                         <td className="align-middle">
-//                           <FaEdit
-//                             size={20}
-//                             className="text-purple review_fa_eye"
-//                             style={{ cursor: "pointer" }}
-//                             onClick={() => handleEdit(invoice)}
-//                           />
-//                         </td>
-//                         <td className="align-middle">
-//                           {invoice.aA_Number || "-"}
-//                         </td>
-//                         <td className="align-middle">
-//                           {invoice.imeiNumber || "-"}
-//                         </td>
-//                         <td className="align-middle">
-//                           {new Date().toLocaleDateString("en-GB")}
-//                         </td>
-//                         <td className="align-middle">
-//                           {invoice.closureDate || "-"}
-//                         </td>
-//                         <td className="align-middle">
-//                           {invoice.customerName || "-"}
-//                         </td>
-//                         <td className="align-middle">
-//                           {invoice.serviceType || "-"}
-//                         </td>
-//                         <td className="align-middle">{invoice.brand || "-"}</td>
-//                         <td className="align-middle">
-//                           {invoice.makeModel || "-"}
-//                         </td>
-//                         <td className="align-middle">
-//                           {editingRow === invoice.aA_Number ? (
-//                             <input
-//                               type="number"
-//                               name="repairCharges"
-//                               value={editValues.repairCharges || ""}
-//                               onChange={handleEditInputChange}
-//                               className="form-control"
-//                               style={{
-//                                 width: "100px",
-//                                 display: "inline-block",
-//                               }}
-//                               min="0"
-//                               step="0.01"
-//                             />
-//                           ) : (
-//                             invoice.repairCharges || "0.00"
-//                           )}
-//                         </td>
-//                         <td className="align-middle">
-//                           {editingRow === invoice.aA_Number ? (
-//                             <input
-//                               type="number"
-//                               name="serviceCharges"
-//                               value={editValues.serviceCharges || ""}
-//                               onChange={handleEditInputChange}
-//                               className="form-control"
-//                               style={{
-//                                 width: "100px",
-//                                 display: "inline-block",
-//                               }}
-//                               min="0"
-//                               step="0.01"
-//                             />
-//                           ) : (
-//                             invoice.serviceCharges || "0.00"
-//                           )}
-//                         </td>
-
-//                         <td className="align-middle">
-//                           {invoice.total || "0.00"}
-//                         </td>
-//                         <td className="align-middle">
-//                           <span
-//                             className="vendore_invoice_status px-3 py-1 rounded-pill"
-//                             style={{ whiteSpace: "nowrap" }}
-//                           >
-//                             {invoice.invoiceStatus || "-"}
-//                           </span>
-//                         </td>
-//                         <td
-//                           className="align-middle position-relative"
-//                           onMouseEnter={() => setHoveredRow(index)}
-//                           onMouseLeave={() => setHoveredRow(null)}
-//                         >
-//                           {getDifferencesData(invoice).length > 0
-//                             ? "Mismatch"
-//                             : "Valid"}
-//                           {hoveredRow === index &&
-//                             getDifferencesData(invoice).length > 0 && (
-//                               <div
-//                                 style={{
-//                                   position: "absolute",
-//                                   top: "100%",
-//                                   left: "-18%",
-//                                   transform: "translateX(-50%)",
-//                                   zIndex: 1000,
-//                                   backgroundColor: "#fff",
-//                                   border: "1px solid #ddd",
-//                                   padding: "10px",
-//                                   boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-//                                   minWidth: "300px",
-//                                   whiteSpace: "nowrap",
-//                                 }}
-//                               >
-//                                 <table className="table table-sm table-bordered mb-0">
-//                                   <thead>
-//                                     <tr>
-//                                       <th>Field</th>
-//                                       <th>Excel Data</th>
-//                                       <th>System Data</th>
-//                                     </tr>
-//                                   </thead>
-//                                   <tbody>
-//                                     {getDifferencesData(invoice).map(
-//                                       (diff, i) => (
-//                                         <tr key={i}>
-//                                           <td>{diff.field}</td>
-//                                           <td>{diff.table}</td>
-//                                           <td>{diff.api}</td>
-//                                         </tr>
-//                                       )
-//                                     )}
-//                                   </tbody>
-//                                 </table>
-//                               </div>
-//                             )}
-//                         </td>
-//                         <td className="align-middle">
-//                           {editingRow === invoice.aA_Number ? (
-//                             <input
-//                               type="text"
-//                               name="remarks"
-//                               value={editValues.remarks || ""}
-//                               onChange={handleEditInputChange}
-//                               className="form-control"
-//                               style={{
-//                                 width: "150px",
-//                                 display: "inline-block",
-//                               }}
-//                               placeholder="Enter remarks"
-//                             />
-//                           ) : (
-//                             invoice.remarks || "no remarks"
-//                           )}
-//                         </td>
-//                         <td className="align-middle border-end">
-//                           {editingRow === invoice.aA_Number ? (
-//                             <>
-//                               <FaSave
-//                                 size={20}
-//                                 className="text-green-500 me-2"
-//                                 style={{ cursor: "pointer", color: "green" }}
-//                                 onClick={() =>
-//                                   handleSaveEdit(invoice.aA_Number)
-//                                 }
-//                               />
-//                               <FaTimes
-//                                 size={20}
-//                                 className="text-red-600"
-//                                 style={{ cursor: "pointer", color: "red" }}
-//                                 onClick={handleCancelEdit}
-//                               />
-//                             </>
-//                           ) : (
-//                             <FaTrash
-//                               size={20}
-//                               style={{ cursor: "pointer", color: "red" }}
-//                               onClick={() => handleDelete(index)}
-//                             />
-//                           )}
-//                         </td>
-//                       </tr>
-//                     ))}
-//                 </tbody>
-//               </Table>
-//             </div>
-//             <div className="d-flex justify-content-between align-items-center pagination-container mt-3">
-//               <button
-//                 className="btn btn-outline-primary"
-//                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//                 disabled={currentPage === 1}
-//               >
-//                 Previous
-//               </button>
-//               <span className="page-info">
-//                 Page {currentPage} of {totalPages}
-//               </span>
-//               <button
-//                 className="btn btn-outline-primary"
-//                 onClick={() =>
-//                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-//                 }
-//                 disabled={currentPage === totalPages}
-//               >
-//                 Next
-//               </button>
-//             </div>
-//             <div className="d-flex justify-content-between align-items-center mt-2">
-//               <div
-//                 className="batch_popup_gross_ammount p-2 d-flex align-items-center"
-//                 style={{ backgroundColor: "#eef4ff", marginTop: "1rem" }}
-//               >
-//                 <span className="fw-semibold text-secondary me-2">
-//                   Total no of selected invoices:
-//                 </span>
-//                 <span className="fw-bold text-dark">{selectedAAno.length}</span>
-//               </div>
-//               <div
-//                 className="batch_popup_gross_ammount"
-//                 style={{ backgroundColor: "#eef4ff", marginTop: "1rem" }}
-//               >
-//                 <div className="text-start batch_popup_amount">
-//                   <div className="fw-bold batch_gross">
-//                     Total Repair Charges
-//                   </div>
-//                   <div className="batch_amount_to_fix">
-//                     ₹ {parseFloat(totalRepairCharges).toFixed(2)}
-//                   </div>
-//                 </div>
-//                 <div className="text-start batch_popup_amount">
-//                   <div className="fw-bold batch_gross">
-//                     Total Service Charges
-//                   </div>
-//                   <div className="batch_amount_to_fix">
-//                     ₹ {parseFloat(totalServiceCharges).toFixed(2)}
-//                   </div>
-//                 </div>
-//                 <div className="text-start batch_popup_amount">
-//                   <div className="fw-bold batch_gross">Total Gross Amount</div>
-//                   <div className="batch_amount_to_fix">
-//                     ₹ {grossAmount.toFixed(2)}
-//                   </div>
-//                 </div>
-//                 <div className="text-start batch_popup_amount">
-//                   <div className="fw-bold batch_gross">Total Amount</div>
-//                   <div className="batch_amount_to_fix">₹ {finalAmount}</div>
-//                   <div className="batch_gross ms-2">
-//                     ({isGSTApplied ? "incl GST 18%" : "excl GST"})
-//                   </div>
-//                 </div>
-//                 <div className="mt-2 ms-2">
-//                   <span className="fw-semibold text-secondary">
-//                     {isGSTApplied
-//                       ? `GST Amount Added: ₹${gstAmount}`
-//                       : `Total GST Amount: ₹${gstAmount}`}
-//                   </span>
-//                 </div>
-//               </div>
-//             </div>
-//             <div className="d-flex justify-content-between align-items-center border rounded p-3 mt-4">
-//               <div className="fw-bold ms-2">
-//                 <span>GST</span>
-//               </div>
-//               <div className="d-flex gap-3">
-//                 <label className="regestration_kc_radio">
-//                   <input
-//                     type="radio"
-//                     name="kcApplication"
-//                     id="yes"
-//                     value="Yes"
-//                     checked={isGSTApplied}
-//                     onChange={() => setIsGSTApplied(true)}
-//                   />
-//                   <span className="regestration_applied_yes">Yes</span>
-//                 </label>
-//                 <span className="mx-1">/</span>
-//                 <label className="regestration_kc_radio">
-//                   <input
-//                     type="radio"
-//                     name="kcApplication"
-//                     id="No"
-//                     value="No"
-//                     checked={!isGSTApplied}
-//                     onChange={() => setIsGSTApplied(false)}
-//                   />
-//                   <span className="regestration_applied_yes">No</span>
-//                 </label>
-//               </div>
-//             </div>
-//             <div>
-//               <form className="mt-4">
-//                 <div className="row align-items-center">
-//                   <div className="col-md-4 align-items-center mb-3">
-//                     <label className="me-2 fw-semibold w-50">Case Count</label>
-//                     <input
-//                       type="text"
-//                       className={`form-control border-dark ${
-//                         (uploadedFile || !existingInvoice.url) &&
-//                         fieldErrors.caseCount
-//                           ? "is-invalid"
-//                           : ""
-//                       }`}
-//                       placeholder="Case Count"
-//                       value={caseCount}
-//                       onChange={(e) => {
-//                         const value = e.target.value;
-//                         setCaseCount(value);
-//                         if (uploadedFile || !existingInvoice.url) {
-//                           setFieldErrors((prev) => ({
-//                             ...prev,
-//                             caseCount:
-//                               !value.trim() ||
-//                               isNaN(value) ||
-//                               parseInt(value) <= 0,
-//                           }));
-//                         }
-//                       }}
-//                     />
-//                     {(uploadedFile || !existingInvoice.url) &&
-//                       fieldErrors.caseCount && (
-//                         <div
-//                           className="text-danger mt-1"
-//                           style={{ fontSize: "14px" }}
-//                         >
-//                           Case Count must be a valid positive number.
-//                         </div>
-//                       )}
-//                   </div>
-//                   <div className="col-md-4 align-items-center mb-3">
-//                     <label className="me-2 fw-semibold w-50">Invoice No</label>
-//                     <input
-//                       type="text"
-//                       className={`form-control border-dark ${
-//                         (uploadedFile || !existingInvoice.url) &&
-//                         fieldErrors.invoiceNo
-//                           ? "is-invalid"
-//                           : ""
-//                       }`}
-//                       placeholder="Invoice No"
-//                       value={invoiceNo}
-//                       onChange={(e) => {
-//                         const value = e.target.value;
-//                         setInvoiceNo(value);
-//                         if (uploadedFile || !existingInvoice.url) {
-//                           setFieldErrors((prev) => ({
-//                             ...prev,
-//                             invoiceNo: !value.trim(),
-//                           }));
-//                         }
-//                       }}
-//                     />
-//                     {(uploadedFile || !existingInvoice.url) &&
-//                       fieldErrors.invoiceNo && (
-//                         <div
-//                           className="text-danger mt-1"
-//                           style={{ fontSize: "14px" }}
-//                         >
-//                           Invoice No is required.
-//                         </div>
-//                       )}
-//                   </div>
-//                   <div className="col-md-4 align-items-center mb-3">
-//                     <label className="me-2 fw-semibold w-50">
-//                       Invoice Date
-//                     </label>
-//                     <input
-//                       type="date"
-//                       className={`form-control border-dark ${
-//                         (uploadedFile || !existingInvoice.url) &&
-//                         fieldErrors.invoiceDate
-//                           ? "is-invalid"
-//                           : ""
-//                       }`}
-//                       value={invoiceDate}
-//                       onChange={(e) => {
-//                         const value = e.target.value;
-//                         setInvoiceDate(value);
-//                         if (uploadedFile || !existingInvoice.url) {
-//                           setFieldErrors((prev) => ({
-//                             ...prev,
-//                             invoiceDate:
-//                               !value.trim() ||
-//                               value > new Date().toISOString().split("T")[0],
-//                           }));
-//                         }
-//                       }}
-//                       max={new Date().toISOString().split("T")[0]}
-//                     />
-//                     {(uploadedFile || !existingInvoice.url) &&
-//                       fieldErrors.invoiceDate && (
-//                         <div
-//                           className="text-danger mt-1"
-//                           style={{ fontSize: "14px" }}
-//                         >
-//                           Invoice Date is required and cannot be future.
-//                         </div>
-//                       )}
-//                   </div>
-//                   <div className="col-md-4 align-items-center mb-3">
-//                     <label className="me-2 fw-semibold w-50">
-//                       Invoice Amount
-//                     </label>
-//                     <input
-//                       type="text"
-//                       className={`form-control border-dark ${
-//                         (uploadedFile || !existingInvoice.url) &&
-//                         (fieldErrors.invoiceAmount || amountError)
-//                           ? "is-invalid"
-//                           : ""
-//                       }`}
-//                       placeholder="Enter Amount"
-//                       value={invoiceAmount}
-//                       onChange={(e) => {
-//                         const enteredAmount = e.target.value;
-//                         setInvoiceAmount(enteredAmount);
-//                         if (uploadedFile || !existingInvoice.url) {
-//                           setFieldErrors((prev) => ({
-//                             ...prev,
-//                             invoiceAmount:
-//                               !enteredAmount.trim() ||
-//                               isNaN(enteredAmount) ||
-//                               parseFloat(enteredAmount) <= 0,
-//                           }));
-//                           if (enteredAmount.trim() && !isNaN(enteredAmount)) {
-//                             if (
-//                               Math.abs(
-//                                 parseFloat(enteredAmount) -
-//                                   parseFloat(finalAmount)
-//                               ) > 0.01
-//                             ) {
-//                               setAmountError(
-//                                 "Invoice Amount and Final Amount do not match."
-//                               );
-//                             } else {
-//                               setAmountError("");
-//                             }
-//                           } else {
-//                             setAmountError("");
-//                           }
-//                         }
-//                       }}
-//                     />
-//                     {(uploadedFile || !existingInvoice.url) &&
-//                       fieldErrors.invoiceAmount && (
-//                         <div
-//                           className="text-danger mt-1"
-//                           style={{ fontSize: "14px" }}
-//                         >
-//                           Invoice Amount must be a valid positive number.
-//                         </div>
-//                       )}
-//                     {amountError && (
-//                       <div
-//                         className="text-danger mt-1"
-//                         style={{ fontSize: "14px" }}
-//                       >
-//                         {amountError}
-//                       </div>
-//                     )}
-//                   </div>
-//                 </div>
-//               </form>
-//             </div>
-//             <div className="d-flex mt-4 justify-content-center align-items-center flex-wrap gap-3">
-//               <Button
-//                 onClick={downloadCSV}
-//                 className="d-flex align-items-center"
-//                 style={{
-//                   backgroundColor: "rgb(248, 238, 255)",
-//                   border: "1px solid #8000d7",
-//                   padding: "10px 50px",
-//                   borderRadius: "8px",
-//                   fontWeight: "500",
-//                   fontSize: "16px",
-//                   color: "#8000d7",
-//                 }}
-//               >
-//                 <FaDownload />
-//                 <span className="ms-2">Download</span>
-//               </Button>
-//               <Button
-//                 onClick={handleSubmit}
-//                 className="d-flex align-items-center"
-//                 style={{
-//                   backgroundColor: "#8000d7",
-//                   border: "none",
-//                   padding: "10px 16px",
-//                   fontWeight: "500",
-//                   fontSize: "16px",
-//                   color: "white",
-//                 }}
-//                 disabled={loading}
-//               >
-//                 <span className="">{loading ? "Submitting..." : "Save"}</span>
-//               </Button>
-//               <Button
-//                 onClick={handleSendBack}
-//                 className="d-flex align-items-center"
-//                 style={{
-//                   backgroundColor: "#8000d7",
-//                   border: "none",
-//                   padding: "10px 16px",
-//                   fontWeight: "500",
-//                   fontSize: "16px",
-//                   color: "white",
-//                 }}
-//                 disabled={loading}
-//               >
-//                 <span className="">{loading ? "Submitting..." : "Send Back"}</span>
-//               </Button>
-//               <Button
-//                 onClick={handleSendBack}
-//                 className="d-flex align-items-center"
-//                 style={{
-//                   backgroundColor: "#8000d7",
-//                   border: "none",
-//                   padding: "10px 16px",
-//                   fontWeight: "500",
-//                   fontSize: "16px",
-//                   color: "white",
-//                 }}
-//                 disabled={loading}
-//               >
-//                 <span className="">{loading ? "Submitting..." : "Send Partial"}</span>
-//               </Button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </>
-//   );
-// }
-
-// export default ApprovalBatchPage;
-
-
-
-
-
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Button, Form, Table } from "react-bootstrap";
-import {
-  FaEye,
-  FaDownload,
-  FaTrash,
-  FaUpload,
-  FaEdit,
-  FaSave,
-  FaTimes,
-} from "react-icons/fa";
+import { Button, Form, Table, Modal } from "react-bootstrap";
+import { FaEye, FaDownload, FaTrash, FaUpload, FaEdit } from "react-icons/fa";
 import Papa from "papaparse";
 import { useNavigate, useLocation } from "react-router-dom";
 import { saveAs } from "file-saver";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { updateInvoiceStatusNetworkForApproved } from "../../api/api";
+import { IconButton } from "@mui/material";
 
 const BASE_URL = "https://mintflix.live:8086/api/Auto";
 
 function ApprovalBatchPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const batchData = location.state?.batchData || null;
+  const { batchData, batchNo, invoiceStatus } = location.state || {};
   const fileInputRef = useRef();
   const [invoices, setInvoices] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isGSTApplied, setIsGSTApplied] = useState(false);
+  const [isGSTApplied, setIsGSTApplied] = useState(true);
   const [apiData, setApiData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [fileType, setFileType] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [existingInvoice, setExistingInvoice] = useState({
     url: null,
     fileName: null,
@@ -1445,6 +35,7 @@ function ApprovalBatchPage() {
   const [invoiceDate, setInvoiceDate] = useState("");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [amountError, setAmountError] = useState("");
+  const [caseCountError, setCaseCountError] = useState("");
   const [hoveredRow, setHoveredRow] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({
     invoiceNo: false,
@@ -1452,9 +43,19 @@ function ApprovalBatchPage() {
     invoiceAmount: false,
     caseCount: false,
     invoiceFile: false,
+    remarks: {},
   });
-  const [editingRow, setEditingRow] = useState(null);
-  const [editValues, setEditValues] = useState({});
+  const [editValues, setEditValues] = useState({
+    serviceCharges: "",
+    repairCharges: "",
+    chargesInclGST: "",
+    remarks: "",
+    remarkFile: null,
+  });
+
+  console.log("Batch No:", batchNo);
+  console.log("Invoice Status:", invoiceStatus);
+  console.log("Full Data:", batchData);
 
   const itemsPerPage = 8;
   const totalPages = Math.ceil(invoices.length / itemsPerPage);
@@ -1463,30 +64,34 @@ function ApprovalBatchPage() {
   const currentInvoices = invoices.slice(indexOfFirstItem, indexOfLastItem);
   const selectedAAno = invoices.filter((invoice) => invoice.isChecked);
 
-  const totalRepairCharges = invoices.reduce((total, invoice) => {
+  // Calculate totals based on selected invoices only
+  const totalRepairCharges = selectedAAno.reduce((total, invoice) => {
     const cleanedAmount = invoice.repairCharges?.toString().replace(/,/g, "");
     const amount = parseFloat(cleanedAmount);
     return total + (isNaN(amount) ? 0 : amount);
   }, 0);
 
-  const totalServiceCharges = invoices.reduce((total, invoice) => {
+  const totalServiceCharges = selectedAAno.reduce((total, invoice) => {
     const cleanedAmount = invoice.serviceCharges?.toString().replace(/,/g, "");
     const amount = parseFloat(cleanedAmount);
     return total + (isNaN(amount) ? 0 : amount);
   }, 0);
 
-  const grossAmount = invoices.reduce((total, invoice) => {
+  const grossAmount = selectedAAno.reduce((total, invoice) => {
     const cleanedAmount = invoice.total?.toString().replace(/,/g, "");
     const amount = parseFloat(cleanedAmount);
     return total + (isNaN(amount) ? 0 : amount);
   }, 0);
 
-  const finalAmount = isGSTApplied
-    ? (grossAmount * 1.18).toFixed(2)
-    : grossAmount.toFixed(2);
   const gstAmount = isGSTApplied
-    ? (grossAmount * 0.18).toFixed(2)
+    ? (totalServiceCharges * 0.18).toFixed(2)
     : (0).toFixed(2);
+
+  const finalAmount = (
+    totalRepairCharges +
+    totalServiceCharges +
+    parseFloat(gstAmount)
+  ).toFixed(2);
 
   useEffect(() => {
     if (!batchData) {
@@ -1519,7 +124,9 @@ function ApprovalBatchPage() {
           fetch(`${BASE_URL}/GetGadgetCaseDetailsByAA?aaNumbers=${aaNo}`)
             .then((response) => {
               if (!response.ok) {
-                console.error(`HTTP error for aaNo ${aaNo}: ${response.status}`);
+                console.error(
+                  `HTTP error for aaNo ${aaNo}: ${response.status}`
+                );
                 return { status: false, aA_Number: aaNo, dataItems: [] };
               }
               return response.json();
@@ -1587,6 +194,7 @@ function ApprovalBatchPage() {
       batchNo: batchData.batchNo || "",
       isChecked: true,
       remarks: splitData("remarks")[i] || "",
+      remarkFile: batchData.remarkFile || null,
     }));
     setInvoices(invoicesArray);
   }, [batchData]);
@@ -1609,11 +217,14 @@ function ApprovalBatchPage() {
         const dataItem = matchedData.dataItems[0];
         if (
           normalize(dataItem.serviceType) !== normalize(invoice.serviceType) ||
-          normalize(dataItem.repairCharges) !== normalize(invoice.repairCharges) ||
-          normalize(dataItem.serviceCharges) !== normalize(invoice.serviceCharges) ||
+          normalize(dataItem.repairCharges) !==
+            normalize(invoice.repairCharges) ||
+          normalize(dataItem.serviceCharges) !==
+            normalize(invoice.serviceCharges) ||
           normalize(dataItem.total) !== normalize(invoice.total) ||
           normalize(dataItem.imeiNumber) !== normalize(invoice.imeiNumber) ||
-          normalize(dataItem.sellingPartner) !== normalize(invoice.sellingPartner)
+          normalize(dataItem.sellingPartner) !==
+            normalize(invoice.sellingPartner)
         ) {
           return "row-yellow";
         }
@@ -1629,56 +240,64 @@ function ApprovalBatchPage() {
       (item) => item.aA_Number === invoice.aA_Number
     );
     if (!matchedData || matchedData.status === false)
-      return [{ field: "AA Number", table: invoice.aA_Number, api: "-" }];
+      return [{ field: "AA Number", table: invoice.aA_Number, api: "" }];
     const dataItem = matchedData.dataItems[0] || {};
     const differences = [];
     if (normalize(dataItem.serviceType) !== normalize(invoice.serviceType)) {
       differences.push({
         field: "Service Type",
-        table: invoice.serviceType || "-",
-        api: dataItem.serviceType || "-",
+        table: invoice.serviceType || "",
+        api: dataItem.serviceType || "",
       });
     }
     if (normalize(dataItem.imeiNumber) !== normalize(invoice.imeiNumber)) {
       differences.push({
         field: "IMEI Number",
-        table: invoice.imeiNumber || "-",
-        api: dataItem.imeiNumber || "-",
+        table: invoice.imeiNumber || "",
+        api: dataItem.imeiNumber || "",
       });
     }
-    if (normalize(dataItem.sellingPartner) !== normalize(invoice.sellingPartner)) {
+    if (
+      normalize(dataItem.sellingPartner) !== normalize(invoice.sellingPartner)
+    ) {
       differences.push({
         field: "Selling Partner",
-        table: invoice.sellingPartner || "-",
-        api: dataItem.sellingPartner || "-",
+        table: invoice.sellingPartner || "",
+        api: dataItem.sellingPartner || "",
       });
     }
-    if (normalize(dataItem.repairCharges) !== normalize(invoice.repairCharges)) {
+    if (
+      normalize(dataItem.repairCharges) !== normalize(invoice.repairCharges)
+    ) {
       differences.push({
         field: "Repair Charges",
-        table: invoice.repairCharges || "-",
-        api: dataItem.repairCharges || "-",
+        table: invoice.repairCharges || "",
+        api: dataItem.repairCharges || "",
       });
     }
-    if (normalize(dataItem.serviceCharges) !== normalize(invoice.serviceCharges)) {
+    if (
+      normalize(dataItem.serviceCharges) !== normalize(invoice.serviceCharges)
+    ) {
       differences.push({
         field: "Service Charges",
-        table: invoice.serviceCharges || "-",
-        api: dataItem.serviceCharges || "-",
+        table: invoice.serviceCharges || "",
+        api: dataItem.serviceCharges || "",
       });
     }
-    if (normalize(dataItem.chargesInclGST) !== normalize(invoice.chargesInclGST)) {
+    if (
+      normalize(dataItem.chargesInclGST) !== normalize(invoice.chargesInclGST)
+    ) {
       differences.push({
         field: "GST Charges",
-        table: invoice.chargesInclGST || "-",
-        api: dataItem.chargesInclGST || "-",
+        table: invoice.chargesInclGST || "",
+        api: dataItem.chargesInclGST || "",
       });
     }
     if (normalize(dataItem.total) !== normalize(invoice.total)) {
       differences.push({
         field: "Total Amount",
-        table: invoice.total || "-",
-        api: dataItem.total || "-",
+        table: invoice.total || "",
+        api: dataItem.total || "",
       });
     }
     return differences.length > 0 ? differences : [];
@@ -1743,54 +362,32 @@ function ApprovalBatchPage() {
     }
   };
 
-  const downloadCSV = () => {
-    const headers = [
-      "AA Number",
-      "IMEI Number",
-      "Creation Date",
-      "Closure Date",
-      "Customer Name",
-      "Service Type",
-      "Brand",
-      "Make Model",
-      "Repair Charges",
-      "Service Charges",
-      "GST Charges",
-      "Total",
-      "Remarks",
-    ];
-    const today = new Date().toLocaleDateString("en-GB");
-    const data = invoices.map((invoice) => ({
-      aaNumber: invoice.aA_Number || "",
-      imeiNumber: invoice.imeiNumber || "",
-      creationDate: today,
-      closureDate: invoice.closureDate || "",
-      customerName: invoice.customerName || "",
-      serviceType: invoice.serviceType || "",
-      brand: invoice.brand || "",
-      makeModel: invoice.makeModel || "",
-      repairCharges: invoice.repairCharges || "0.00",
-      serviceCharges: invoice.serviceCharges || "0.00",
-      chargesInclGST: invoice.chargesInclGST || "0.00",
-      total: invoice.total || "0.00",
-      remarks: invoice.remarks || "",
-    }));
-    const csv = Papa.unparse({
-      fields: headers,
-      data: data.map((row) => Object.values(row)),
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "invoice-list.csv");
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleEdit = (invoice) => {
-    setEditingRow(invoice.aA_Number);
+  const handleRemarkFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setEditValues((prev) => ({ ...prev, remarkFile: file }));
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowEditModal(false);
+    setEditingInvoice(null);
     setEditValues({
-      serviceCharges: invoice.serviceCharges || "0.00",
-      repairCharges: invoice.repairCharges || "0.00",
-      chargesInclGST: invoice.chargesInclGST || "0.00",
-      remarks: invoice.remarks || "",
+      serviceCharges: "",
+      repairCharges: "",
+      chargesInclGST: "",
+      remarks: "",
+      remarkFile: null,
     });
+    setFieldErrors((prev) => ({
+      ...prev,
+      remarks: { ...prev.remarks, [editingInvoice?.aA_Number]: false },
+    }));
   };
 
   const handleSaveEdit = async (aA_Number) => {
@@ -1798,22 +395,26 @@ function ApprovalBatchPage() {
     const parsedRepairCharges = parseFloat(editValues.repairCharges);
     const parsedChargesInclGST = parseFloat(editValues.chargesInclGST);
     const remarks = editValues.remarks?.trim() || "";
+    const remarkFile = editValues.remarkFile;
 
-    if (
-      isNaN(parsedServiceCharges) ||
-      parsedServiceCharges < 0 ||
-      isNaN(parsedRepairCharges) ||
-      parsedRepairCharges < 0 ||
-      isNaN(parsedChargesInclGST) ||
-      parsedChargesInclGST < 0
-    ) {
-      toast.error("Charges must be valid non-negative numbers.");
+    if (getDifferencesData(editingInvoice).length > 0 && !remarks) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        remarks: { ...prev.remarks, [aA_Number]: true },
+      }));
+      toast.error("Cannot proceed without a reason for mismatched data.");
       return;
     }
 
-    const formattedServiceCharges = parsedServiceCharges.toFixed(2);
-    const formattedRepairCharges = parsedRepairCharges.toFixed(2);
-    const formattedChargesInclGST = parsedChargesInclGST.toFixed(2);
+    const formattedServiceCharges = isNaN(parsedServiceCharges)
+      ? "0.00"
+      : parsedServiceCharges.toFixed(2);
+    const formattedRepairCharges = isNaN(parsedRepairCharges)
+      ? "0.00"
+      : parsedRepairCharges.toFixed(2);
+    const formattedChargesInclGST = isNaN(parsedChargesInclGST)
+      ? "0.00"
+      : parsedChargesInclGST.toFixed(2);
     const formattedTotal = (
       parsedServiceCharges +
       parsedRepairCharges +
@@ -1824,23 +425,24 @@ function ApprovalBatchPage() {
       prevInvoices.map((invoice) =>
         invoice.aA_Number === aA_Number
           ? {
-            ...invoice,
-            serviceCharges: formattedServiceCharges,
-            repairCharges: formattedRepairCharges,
-            chargesInclGST: formattedChargesInclGST,
-            total: formattedTotal,
-            remarks: remarks,
-          }
+              ...invoice,
+              serviceCharges: formattedServiceCharges,
+              repairCharges: formattedRepairCharges,
+              chargesInclGST: formattedChargesInclGST,
+              total: formattedTotal,
+              remarks: remarks,
+              remarkFile: remarkFile ? URL.createObjectURL(remarkFile) : invoice.remarkFile,
+            }
           : invoice
       )
     );
-    setEditingRow(null);
-    setEditValues({});
 
     try {
-      const updatedInvoice = invoices.find((inv) => inv.aA_Number === aA_Number);
+      const updatedInvoice = invoices.find(
+        (inv) => inv.aA_Number === aA_Number
+      );
       const formData = new FormData();
-      formData.append("AANo", aA_Number);
+      formData.append("AANo", aA_Number || "");
       formData.append("BatchNo", batchData?.batchNo || "");
       formData.append("VendorName", batchData?.vendorName || "");
       formData.append("ServiceCharges", formattedServiceCharges);
@@ -1863,7 +465,12 @@ function ApprovalBatchPage() {
       formData.append("TotalRepairCharges", totalRepairCharges.toFixed(2));
       formData.append("TotalServiceCharges", totalServiceCharges.toFixed(2));
       formData.append("CaseCount", caseCount || invoices.length.toString());
-      if (existingInvoice.url) {
+      if (remarkFile) {
+        formData.append("RemarkFile", remarkFile, remarkFile.name);
+      }
+      if (uploadedFile) {
+        formData.append("Invoice", uploadedFile, uploadedFile.name);
+      } else if (existingInvoice.url) {
         formData.append("ExistingInvoiceUrl", existingInvoice.url);
       }
 
@@ -1873,23 +480,73 @@ function ApprovalBatchPage() {
       });
       const result = await response.json();
       if (!response.ok) {
-        console.error("Failed to update invoice:", result.message);
-        toast.error("Failed to update invoice. Please try again.");
+        console.error("Failed to update invoice:", result);
+        toast.error(
+          `Failed to update invoice: ${result.message || "Unknown error"}`
+        );
+        return;
       }
+      toast.success("Invoice updated successfully.");
     } catch (error) {
       console.error("Error updating invoice:", error);
       // toast.error("Error updating invoice. Please check console for details.");
     }
+
+    handleCloseModal();
   };
 
-  const handleCancelEdit = () => {
-    setEditingRow(null);
-    setEditValues({});
+  const handleEdit = (invoice) => {
+    setEditingInvoice(invoice);
+    setEditValues({
+      serviceCharges: invoice.serviceCharges || "0.00",
+      repairCharges: invoice.repairCharges || "0.00",
+      chargesInclGST: invoice.chargesInclGST || "0.00",
+      remarks: invoice.remarks || "",
+      remarkFile: invoice.remarkFile || null,
+    });
+    setShowEditModal(true);
   };
 
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditValues((prev) => ({ ...prev, [name]: value }));
+  const downloadCSV = () => {
+    const headers = [
+      "AA Number",
+      "IMEI Number",
+      "Creation Date",
+      "Closure Date",
+      "Customer Name",
+      "Service Type",
+      "Brand",
+      "Make Model",
+      "Repair Charges",
+      "Service Charges",
+      "GST Charges",
+      "Total",
+      "Remarks",
+      "Remark File",
+    ];
+    const today = new Date().toLocaleDateString("en-GB");
+    const data = invoices.map((invoice) => ({
+      aaNumber: invoice.aA_Number || "",
+      imeiNumber: invoice.imeiNumber || "",
+      creationDate: today,
+      closureDate: invoice.closureDate || "",
+      customerName: invoice.customerName || "",
+      serviceType: invoice.serviceType || "",
+      brand: invoice.brand || "",
+      makeModel: invoice.makeModel || "",
+      repairCharges: invoice.repairCharges || "0.00",
+      serviceCharges: invoice.serviceCharges || "0.00",
+      chargesInclGST: invoice.chargesInclGST || "0.00",
+      total: invoice.total || "0.00",
+      remarks: invoice.remarks || "",
+      remarkFile: invoice.remarkFile || "",
+    }));
+    const csv = Papa.unparse({
+      fields: headers,
+      data: data.map((row) => Object.values(row)),
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "invoice-list.csv");
   };
 
   const handleDownloadInvoice = () => {
@@ -1909,302 +566,328 @@ function ApprovalBatchPage() {
   };
 
   const handleSubmit = async () => {
-    try {
-      const selected = invoices.filter((inv) => inv.isChecked);
-      if (selected.length === 0) {
-        toast.error("Please select at least one invoice.");
-        return;
-      }
+    const parsedCaseCount = parseInt(caseCount);
+    const parsedInvoiceAmount = parseFloat(invoiceAmount);
+    const selectedInvoices = invoices.filter((inv) => inv.isChecked);
 
-      if (uploadedFile || !existingInvoice.url) {
-        const newErrors = {
-          invoiceNo: !invoiceNo.trim(),
-          invoiceDate: !invoiceDate,
-          invoiceAmount: !invoiceAmount.trim(),
-          caseCount: !caseCount.trim(),
-          invoiceFile: !uploadedFile && !existingInvoice.url,
-        };
-        setFieldErrors(newErrors);
-        if (Object.values(newErrors).some(Boolean)) {
-          toast.error(
-            newErrors.invoiceFile
-              ? "Please upload an invoice file."
-              : "Please fill all required invoice fields."
-          );
-          return;
-        }
+    if (selectedInvoices.length === 0) {
+      toast.error("Please select at least one invoice for approval.");
+      return;
+    }
 
-        const parsedInvoiceAmount = parseFloat(invoiceAmount);
-        if (isNaN(parsedInvoiceAmount) || parsedInvoiceAmount <= 0) {
-          setFieldErrors((prev) => ({ ...prev, invoiceAmount: true }));
-          setAmountError("Invoice Amount must be a valid positive number.");
-          toast.error("Invoice Amount must be a valid positive number.");
-          return;
-        }
-
-        if (Math.abs(parsedInvoiceAmount - parseFloat(finalAmount)) > 0.01) {
-          setFieldErrors((prev) => ({ ...prev, invoiceAmount: true }));
-          setAmountError("Invoice Amount and Total Amount do not match.");
-          toast.error("Invoice Amount and Total Amount do not match.");
-          return;
-        } else {
-          setAmountError("");
-        }
-
-        const parsedCaseCount = parseInt(caseCount);
-        if (isNaN(parsedCaseCount) || parsedCaseCount <= 0) {
-          setFieldErrors((prev) => ({ ...prev, caseCount: true }));
-          toast.error("Case Count must be a valid positive number.");
-          return;
-        }
-
-        if (parsedCaseCount !== selected.length) {
-          setFieldErrors((prev) => ({ ...prev, caseCount: true }));
-          toast.error(
-            "Case Count does not match the total number of selected invoices."
-          );
-          return;
-        }
-
-        const today = new Date().toISOString().split("T")[0];
-        if (invoiceDate > today) {
-          setFieldErrors((prev) => ({ ...prev, invoiceDate: true }));
-          toast.error("Invoice Date cannot be a future date.");
-          return;
-        }
-      } else {
-        const confirmProceed = window.confirm(
-          "Using existing invoice. Do you want to continue without uploading a new file?"
-        );
-        if (!confirmProceed) {
-          return;
-        }
-      }
-
-      const formData = new FormData();
-      const extract = (key) =>
-        selected.map((item) => item[key] || "").join(",");
-      formData.append("AANo", extract("aA_Number"));
-      formData.append("IMEINo", extract("imeiNumber"));
-      formData.append("CreationDate", extract("creationDate"));
-      formData.append("ClosureDate", extract("closureDate"));
-      formData.append("CustomerName", extract("customerName"));
-      formData.append("VendorName", batchData?.vendorName || "");
-      formData.append("FinalAmount", finalAmount);
-      formData.append("TotalRepairCharges", totalRepairCharges.toFixed(2));
-      formData.append("TotalServiceCharges", totalServiceCharges.toFixed(2));
-      formData.append("BatchNo", batchData?.batchNo || "");
-      formData.append("ServiceType", extract("serviceType"));
-      formData.append("Brand", extract("brand"));
-      formData.append("MakeModel", extract("makeModel"));
-      formData.append("RepairCharges", extract("repairCharges"));
-      formData.append("ServiceCharges", extract("serviceCharges"));
-      formData.append("ChargesInclGST", extract("chargesInclGST"));
-      formData.append("Total", extract("total"));
-      formData.append("SellingPartner", extract("sellingPartner"));
-      formData.append("Remarks", extract("remarks"));
-      formData.append(
-        "InvoiceStatus",
-        uploadedFile || existingInvoice.url ? "Invoice Uploaded" : extract("invoiceStatus")
+    // Validate yellow rows for remarks
+    const yellowRowsWithoutRemarks = selectedInvoices.filter(
+      (invoice) =>
+        getRowClassName(invoice) === "row-yellow" && !invoice.remarks?.trim()
+    );
+    if (yellowRowsWithoutRemarks.length > 0) {
+      const aaNumbers = yellowRowsWithoutRemarks
+        .map((inv) => inv.aA_Number)
+        .join(", ");
+      toast.error(
+        `Cannot approve invoices with mismatched data without remarks. Please add remarks for AA Numbers: ${aaNumbers}.`
       );
-      formData.append("InvoiceNo", invoiceNo || "");
-      formData.append("InvoiceDate", invoiceDate || "");
-      formData.append("InvoiceAmount", invoiceAmount || "");
-      formData.append("CaseCount", caseCount || selected.length.toString());
-      formData.append("IsGSTApplied", isGSTApplied ? "true" : "false");
-      if (uploadedFile) {
-        formData.append("Invoice", uploadedFile, uploadedFile.name);
-      } else if (existingInvoice.url) {
-        formData.append("ExistingInvoiceUrl", existingInvoice.url);
-      }
+      return;
+    }
 
+    if (selectedInvoices.length !== parsedCaseCount) {
+      toast.error("Total number of selected invoices must equal Case Count.");
+      return;
+    }
+
+    if (
+      !isNaN(parsedInvoiceAmount) &&
+      Math.abs(parsedInvoiceAmount - parseFloat(finalAmount)) > 0.01
+    ) {
+      toast.error("Invoice Amount must match Total Amount.");
+      return;
+    }
+
+    try {
       setLoading(true);
-      const response = await fetch(`${BASE_URL}/SaveApprovalBatchData`, {
-        method: "POST",
-        body: formData,
+      const statusResponse = await updateInvoiceStatusNetworkForApproved({
+        batchNo: batchData?.batchNo || "",
+        invoiceStatus: "Approve",
       });
-      const result = await response.json();
-      setLoading(false);
 
-      if (!response.ok) {
-        toast.error("Error submitting batch: " + (result.message || "Unknown error"));
+      if (!statusResponse?.status) {
+        toast.error(
+          "Error updating invoice status: " +
+            (statusResponse?.message || "Unknown error")
+        );
         return;
       }
 
-      toast.success("Batch submitted successfully.");
-      navigate("/approval", { state: { updatedInvoices: invoices } });
+      toast.success("Selected invoices approved successfully.");
+      // Keep only unselected invoices in the current page
+      setInvoices(invoices.filter((inv) => !inv.isChecked));
     } catch (error) {
       console.error("Submission failed:", error);
-      setLoading(false);
       toast.error("Submission failed. Please check console for details.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSendAction = async (type) => {
-    const isSendBack = type === "Send Back";
-    const isPartial = type === "Send Partial";
+  const handleSendAction = async () => {
+    const selectedInvoices = invoices.filter((inv) => inv.isChecked);
+    const unselectedInvoices = invoices.filter((inv) => !inv.isChecked);
 
-    const selected = invoices.filter((inv) => inv.isChecked);
-    if (selected.length === 0) {
+    if (selectedInvoices.length === 0 && unselectedInvoices.length === 0) {
       toast.error("Please select at least one invoice.");
       return;
     }
 
-    const filteredSelected = isSendBack
-      ? selected
-      : selected.filter((inv) => getRowClassName(inv) === "row-green");
-
-    console.log(filteredSelected, 'filterrer')
-    if (isPartial && filteredSelected.length === 0) {
-      toast.error("selected rows are not eligible for partial approval.");
-      return;
+    // Validate yellow rows for remarks in selected invoices (Partial Approval)
+    if (selectedInvoices.length > 0) {
+      const yellowRowsWithoutRemarks = selectedInvoices.filter(
+        (invoice) =>
+          getRowClassName(invoice) === "row-yellow" && !invoice.remarks?.trim()
+      );
+      if (yellowRowsWithoutRemarks.length > 0) {
+        const aaNumbers = yellowRowsWithoutRemarks
+          .map((inv) => inv.aA_Number)
+          .join(", ");
+        toast.error(
+          `Cannot partially approve invoices with mismatched data without remarks. Please add remarks for AA Numbers: ${aaNumbers}.`
+        );
+        return;
+      }
     }
 
-    // const reason = prompt("Please provide a reason:");
-    // if (!reason || !reason.trim()) {
-    //   toast.error("A reason is required.");
-    //   return;
-    // }
+    // Prepare FormData for selected invoices (Partial Approval)
+    if (selectedInvoices.length > 0) {
+      const extract = (key) =>
+        selectedInvoices.map((item) => item[key] || "").join(", ");
 
-    // Helper to extract field values
-    const extract = (key) =>
-      filteredSelected.map((item) => item[key] || "").join(", ");
+      const formData = new FormData();
+      formData.append("sellingPartner", extract("sellingPartner") || "");
+      formData.append("aaNo", extract("aA_Number") || "");
+      formData.append("imeiNo", extract("imeiNumber") || "");
+      formData.append("creationDate", new Date().toISOString());
+      formData.append("closureDate", "");
+      formData.append("customerName", extract("customerName") || "");
+      formData.append("serviceType", extract("serviceType") || "");
+      formData.append("brand", extract("brand") || "");
+      formData.append("makeModel", extract("makeModel") || "");
+      formData.append("repairCharges", extract("repairCharges") || "0.00");
+      formData.append("serviceCharges", extract("serviceCharges") || "0.00");
+      formData.append("total", extract("total") || "0.00");
+      formData.append("invoiceStatus", "Invoice Uploaded");
+      formData.append("batchNo", batchData?.batchNo || "");
+      formData.append("selectedService", "");
+      formData.append(
+        "totalRepairCharges",
+        parseFloat(totalRepairCharges).toFixed(2)
+      );
+      formData.append(
+        "totalServiceCharges",
+        parseFloat(totalServiceCharges).toFixed(2)
+      );
+      formData.append("finalAmount", parseFloat(finalAmount).toFixed(2));
+      formData.append(
+        "gst",
+        isGSTApplied ? parseFloat(gstAmount).toFixed(2) : "0.00"
+      );
+      formData.append("invoiceNo", invoiceNo || "");
+      formData.append("invoiceDate", invoiceDate || "");
+      formData.append("invoiceAmount", invoiceAmount || "0.00");
+      formData.append("invoice", existingInvoice?.url || "");
+      formData.append("vendorName", batchData?.vendorName || "");
+      formData.append("caseCount", selectedInvoices.length.toString());
+      formData.append("remarks", extract("remarks") || "");
+      formData.append("remarkFile", extract("remarkFile") || "");
+      formData.append("type", "Send Partial");
+      formData.append("isSendBack", "false");
+      formData.append("isPartial", "true");
 
-    const payload = {
-      sellingPartner: extract("sellingPartner"),
-      aaNo: extract("aA_Number"),
-      imeiNo: extract("imeiNumber"),
-      creationDate: new Date().toISOString(),
-      closureDate: null,
-      customerName: extract("customerName"),
-      serviceType: extract("serviceType"),
-      brand: extract("brand"),
-      makeModel: extract("makeModel"),
-      repairCharges: extract("repairCharges"),
-      serviceCharges: extract("serviceCharges"),
-      total: extract("total"),
-      invoiceStatus: "Invoice Uploaded",
-      batchNo: batchData?.batchNo || "",
-      selectedService: null,
-      totalRepairCharges: totalRepairCharges.toFixed(2),
-      totalServiceCharges: totalServiceCharges.toFixed(2),
-      finalAmount: finalAmount.toString(),
-      gst: null,
-      invoiceNo: invoiceNo || "",
-      invoiceDate: invoiceDate || "",
-      invoiceAmount: invoiceAmount || "",
-      invoice: existingInvoice?.url || "",
-      vendorName: batchData?.vendorName || "",
-      caseCount: filteredSelected.length,
-      remarks: extract("remarks"),
-      type,
-      isSendBack,
-      isPartial,
-      // reason: reason.trim(),
-    };
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${BASE_URL}/DeleteAndInsertBatchData`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      setLoading(false);
-
-      if (!response.ok) {
-        toast.error("Error: " + (result.message || "Unknown error"));
+      if (!formData.get("aaNo")) {
+        toast.error("AA Numbers are required for partial approval.");
+        return;
+      }
+      if (!formData.get("batchNo")) {
+        toast.error("Batch Number is required for partial approval.");
+        return;
+      }
+      if (!formData.get("invoiceNo") && (uploadedFile || !existingInvoice.url)) {
+        toast.error("Invoice Number is required for partial approval.");
+        return;
+      }
+      if (
+        !formData.get("invoiceDate") &&
+        (uploadedFile || !existingInvoice.url)
+      ) {
+        toast.error("Invoice Date is required for partial approval.");
+        return;
+      }
+      if (
+        !formData.get("invoiceAmount") &&
+        (uploadedFile || !existingInvoice.url)
+      ) {
+        toast.error("Invoice Amount is required for partial approval.");
         return;
       }
 
-      toast.success("Send submitted successfully.");
+      try {
+        setLoading(true);
+        console.log("Sending FormData for Partial Approval:");
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
 
-      if (isSendBack) {
-        navigate("/sendBackByapproval", {
-          state: { updatedInvoices: invoices },
-        });
-      } else if (isPartial) {
-        navigate("/partialApproval", {
-          state: { updatedInvoices: invoices },
+        const response = await fetch(`${BASE_URL}/DeleteAndInsertBatchData`, {
+          method: "POST",
+          body: formData,
         });
 
+        const result = await response.json();
+        if (!response.ok) {
+          console.error("API error for partial approval:", {
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: result,
+          });
+          toast.error(
+            `Error in partial approval: ${result.message || "Unknown error"} (Status: ${
+              response.status
+            })`
+          );
+          return;
+        }
+
+        toast.success("Selected invoices sent for partial approval successfully.");
+      } catch (error) {
+        console.error("Partial approval failed:", {
+          message: error.message,
+          stack: error.stack,
+          formData: Object.fromEntries(formData.entries()),
+        });
+        toast.error(`Partial approval failed: ${error.message}. Check console for details.`);
+        return;
       }
-    } catch (error) {
-      console.error("Send failed:", error);
+    }
+
+    // Prepare FormData for unselected invoices (Send Back)
+    if (unselectedInvoices.length > 0) {
+      const extract = (key) =>
+        unselectedInvoices.map((item) => item[key] || "").join(", ");
+
+      const formData = new FormData();
+      formData.append("sellingPartner", extract("sellingPartner") || "");
+      formData.append("aaNo", extract("aA_Number") || "");
+      formData.append("imeiNo", extract("imeiNumber") || "");
+      formData.append("creationDate", new Date().toISOString());
+      formData.append("closureDate", "");
+      formData.append("customerName", extract("customerName") || "");
+      formData.append("serviceType", extract("serviceType") || "");
+      formData.append("brand", extract("brand") || "");
+      formData.append("makeModel", extract("makeModel") || "");
+      formData.append("repairCharges", extract("repairCharges") || "0.00");
+      formData.append("serviceCharges", extract("serviceCharges") || "0.00");
+      formData.append("total", extract("total") || "0.00");
+      formData.append("invoiceStatus", "Invoice Uploaded");
+      formData.append("batchNo", batchData?.batchNo || "");
+      formData.append("selectedService", "");
+      formData.append(
+        "totalRepairCharges",
+        parseFloat(totalRepairCharges).toFixed(2)
+      );
+      formData.append(
+        "totalServiceCharges",
+        parseFloat(totalServiceCharges).toFixed(2)
+      );
+      formData.append("finalAmount", parseFloat(finalAmount).toFixed(2));
+      formData.append(
+        "gst",
+        isGSTApplied ? parseFloat(gstAmount).toFixed(2) : "0.00"
+      );
+      formData.append("invoiceNo", invoiceNo || "");
+      formData.append("invoiceDate", invoiceDate || "");
+      formData.append("invoiceAmount", invoiceAmount || "0.00");
+      formData.append("invoice", existingInvoice?.url || "");
+      formData.append("vendorName", batchData?.vendorName || "");
+      formData.append("caseCount", unselectedInvoices.length.toString());
+      formData.append("remarks", extract("remarks") || "");
+      formData.append("remarkFile", extract("remarkFile") || "");
+      formData.append("type", "Send Back");
+      formData.append("isSendBack", "true");
+      formData.append("isPartial", "false");
+
+      if (!formData.get("aaNo")) {
+        toast.error("AA Numbers are required for send back.");
+        return;
+      }
+      if (!formData.get("batchNo")) {
+        toast.error("Batch Number is required for send back.");
+        return;
+      }
+      if (!formData.get("invoiceNo") && (uploadedFile || !existingInvoice.url)) {
+        toast.error("Invoice Number is required for send back.");
+        return;
+      }
+      if (
+        !formData.get("invoiceDate") &&
+        (uploadedFile || !existingInvoice.url)
+      ) {
+        toast.error("Invoice Date is required for send back.");
+        return;
+      }
+      if (
+        !formData.get("invoiceAmount") &&
+        (uploadedFile || !existingInvoice.url)
+      ) {
+        toast.error("Invoice Amount is required for send back.");
+        return;
+      }
+
+      try {
+        console.log("Sending FormData for Send Back:");
+        for (let [key, value] of formData.entries()) {
+          console.log(`${key}: ${value}`);
+        }
+
+        const response = await fetch(`${BASE_URL}/DeleteAndInsertBatchData`, {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          console.error("API error for send back:", {
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: result,
+          });
+          toast.error(
+            `Error in send back: ${result.message || "Unknown error"} (Status: ${
+              response.status
+            })`
+          );
+          return;
+        }
+
+        toast.success("Unselected invoices sent back successfully.");
+      } catch (error) {
+        console.error("Send back failed:", {
+          message: error.message,
+          stack: error.stack,
+          formData: Object.fromEntries(formData.entries()),
+        });
+        toast.error(`Send back failed: ${error.message}. Check console for details.`);
+        return;
+      }
+    }
+
+    try {
+      setLoading(true);
+      // Navigate to both routes with respective data
+      navigate("/partialApproval", {
+        state: { updatedInvoices: selectedInvoices, sentBackInvoices: unselectedInvoices },
+      });
+    } finally {
       setLoading(false);
-      toast.error("Send failed. Check console for details.");
     }
   };
-
-  // const handleSendPartial = async () => {
-  //   try {
-  //     const selected = invoices.filter((inv) => inv.isChecked);
-  //     if (selected.length === 0) {
-  //       toast.error("Please select at least one invoice to send partially.");
-  //       return;
-  //     }
-
-  //     const reason = prompt("Please provide a reason for sending partially:");
-  //     if (!reason || !reason.trim()) {
-  //       toast.error("A reason is required to send partial batch.");
-  //       return;
-  //     }
-
-  //     const formData = new FormData();
-  //     const extract = (key) =>
-  //       selected.map((item) => item[key] || "").join(",");
-  //     formData.append("AANo", extract("aA_Number"));
-  //     formData.append("BatchNo", batchData?.batchNo || "");
-  //     formData.append("VendorName", batchData?.vendorName || "");
-  //     formData.append("Reason", reason.trim());
-  //     formData.append("InvoiceStatus", "Partially Sent");
-  //     formData.append("Remarks", extract("remarks"));
-  //     formData.append("IMEINo", extract("imeiNumber"));
-  //     formData.append("CustomerName", extract("customerName"));
-  //     formData.append("ServiceType", extract("serviceType"));
-  //     formData.append("Brand", extract("brand"));
-  //     formData.append("MakeModel", extract("makeModel"));
-  //     formData.append("RepairCharges", extract("repairCharges"));
-  //     formData.append("ServiceCharges", extract("serviceCharges"));
-  //     formData.append("ChargesInclGST", extract("chargesInclGST"));
-  //     formData.append("Total", extract("total"));
-  //     formData.append("CreationDate", extract("creationDate"));
-  //     formData.append("ClosureDate", extract("closureDate"));
-  //     formData.append("SellingPartner", extract("sellingPartner"));
-  //     formData.append("InvoiceNo", invoiceNo || "");
-  //     formData.append("InvoiceDate", invoiceDate || "");
-  //     formData.append("InvoiceAmount", invoiceAmount || "");
-  //     formData.append("FinalAmount", finalAmount);
-  //     formData.append("TotalRepairCharges", totalRepairCharges.toFixed(2));
-  //     formData.append("TotalServiceCharges", totalServiceCharges.toFixed(2));
-  //     formData.append("CaseCount", caseCount || selected.length.toString());
-  //     if (existingInvoice.url) {
-  //       formData.append("ExistingInvoiceUrl", existingInvoice.url);
-  //     }
-
-  //     setLoading(true);
-  //     const response = await fetch(`${BASE_URL}/SendPartialApprovalBatch`, {
-  //       method: "POST",
-  //       body: formData,
-  //     });
-  //     const result = await response.json();
-  //     setLoading(false);
-
-  //     if (!response.ok) {
-  //       toast.error("Error sending partial batch: " + (result.message || "Unknown error"));
-  //       return;
-  //     }
-
-  //     toast.success("Batch sent partially successfully.");
-  //     navigate("/approval", { state: { updatedInvoices: invoices } });
-  //   } catch (error) {
-  //     console.error("Send Partial failed:", error);
-  //     setLoading(false);
-  //     toast.error("Send Partial failed. Please check console for details.");
-  //   }
-  // };
 
   return (
     <>
@@ -2226,7 +909,11 @@ function ApprovalBatchPage() {
           .vendore_invoice_status { white-space: nowrap; }
         `}
       </style>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+      />
       <div className="approval-page-container">
         <h2 className="mb-4">Upload Invoice</h2>
         <div className="mt-4">
@@ -2248,13 +935,19 @@ function ApprovalBatchPage() {
               </div>
               <div className="d-flex gap-2">
                 {existingInvoice.url && (
-                  <button className="batch_popup_upload" onClick={handleDownloadInvoice}>
-                    <FaDownload /> <span className="ms-2">Download Invoice</span>
+                  <button
+                    className="batch_popup_upload"
+                    onClick={handleDownloadInvoice}
+                  >
+                    <FaDownload />{" "}
+                    <span className="ms-2">Download Invoice</span>
                   </button>
                 )}
                 <button className="batch_popup_upload" onClick={handleClick}>
                   <FaUpload />{" "}
-                  <span className="ms-2">{existingInvoice.url ? "Update Invoice" : "Upload Invoice"}</span>
+                  <span className="ms-2">
+                    {existingInvoice.url ? "Update Invoice" : "Upload Invoice"}
+                  </span>
                 </button>
                 <input
                   type="file"
@@ -2268,7 +961,8 @@ function ApprovalBatchPage() {
             <div className="text-end upload_file_ext_name mb-3">
               {existingInvoice.url && !uploadedFile && (
                 <div style={{ fontWeight: "bold", color: "green" }}>
-                  Existing Invoice: {existingInvoice.fileName} (Type: {existingInvoice.fileType})
+                  Existing Invoice: {existingInvoice.fileName} (Type:{" "}
+                  {existingInvoice.fileType})
                 </div>
               )}
               {uploadedFile && fileType && (
@@ -2284,12 +978,22 @@ function ApprovalBatchPage() {
             </div>
             <div className="table-container mt-3">
               <Table className="bg-white text-center border-0 network_table">
-                <thead style={{ backgroundColor: "#EEF4FF", position: "sticky", top: 0, zIndex: 1 }}>
+                <thead
+                  style={{
+                    backgroundColor: "#EEF4FF",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1,
+                  }}
+                >
                   <tr className="text-dark fw-semibold table_th_border">
                     <th className="border-start d-flex gap-2">
                       <Form.Check
                         type="checkbox"
-                        checked={invoices.length > 0 && invoices.every((invoice) => invoice.isChecked)}
+                        checked={
+                          invoices.length > 0 &&
+                          invoices.every((invoice) => invoice.isChecked)
+                        }
                         onChange={() => handleCheckboxChange("all")}
                       />
                       Select
@@ -2310,90 +1014,99 @@ function ApprovalBatchPage() {
                     <th style={{ whiteSpace: "nowrap" }}>Invoice Status</th>
                     <th style={{ whiteSpace: "nowrap" }}>Mismatched Data</th>
                     <th style={{ whiteSpace: "nowrap" }}>Remarks</th>
-                    <th className="border-end" style={{ whiteSpace: "nowrap" }}>Action</th>
+                    <th style={{ whiteSpace: "nowrap" }}>Remarks File</th>
+                    <th className="border-end" style={{ whiteSpace: "nowrap" }}>
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading && (
                     <tr>
-                      <td colSpan="19" className="text-center py-3">Validating data...</td>
+                      <td colSpan="19" className="text-center py-3">
+                        Validating data...
+                      </td>
                     </tr>
                   )}
                   {!loading &&
                     currentInvoices.map((invoice, index) => (
                       <tr
-                        key={invoice.aA_Number || `${invoice.aA_Number}-${index}`}
-                        className={`text-center border-bottom network_td_item ${getRowClassName(invoice)}`}
-                        aria-label={getRowClassName(invoice).replace("row-", "") + " row"}
+                        key={
+                          invoice.aA_Number || `${invoice.aA_Number}-${index}`
+                        }
+                        className={`text-center border-bottom network_td_item ${getRowClassName(
+                          invoice
+                        )}`}
+                        aria-label={
+                          getRowClassName(invoice).replace("row-", "") + " row"
+                        }
                       >
                         <td className="border-start align-middle">
                           <Form.Check
                             type="checkbox"
                             checked={invoice.isChecked}
-                            onChange={() => handleCheckboxChange(invoice.aA_Number)}
-                          />
-                        </td>
-                        <td className="align-middle">
-                          <FaEye
-                            size={20}
-                            className="text-purple review_fa_eye"
-                            style={{ cursor: "pointer" }}
-                            onClick={() =>
-                              navigate("/invoice-template", {
-                                state: { aaNumber: invoice.aA_Number, invoiceData: invoice },
-                              })
+                            onChange={() =>
+                              handleCheckboxChange(invoice.aA_Number)
                             }
                           />
                         </td>
                         <td className="align-middle">
-                          <FaEdit
+                        <IconButton   onClick={() =>
+                              navigate("/invoice-template", {
+                                state: {
+                                  aaNumber: invoice.aA_Number,
+                                  invoiceData: invoice,
+                                },
+                              })
+                            }>
+
+                          <FaEye
                             size={20}
                             className="text-purple review_fa_eye"
+                            style={{ cursor: "pointer" }}
+                          
+                          />
+                        </IconButton>
+                        </td>
+                        <td className="align-middle">
+                          <FaEdit
+                            size={20}
+                            className="text-purple-600 review_fa_eye"
                             style={{ cursor: "pointer" }}
                             onClick={() => handleEdit(invoice)}
                           />
                         </td>
-                        <td className="align-middle">{invoice.aA_Number || "-"}</td>
-                        <td className="align-middle">{invoice.imeiNumber || "-"}</td>
-                        <td className="align-middle">{new Date().toLocaleDateString("en-GB")}</td>
-                        <td className="align-middle">{invoice.closureDate || "-"}</td>
-                        <td className="align-middle">{invoice.customerName || "-"}</td>
-                        <td className="align-middle">{invoice.serviceType || "-"}</td>
+                        <td className="align-middle">
+                          {invoice.aA_Number || "-"}
+                        </td>
+                        <td className="align-middle">
+                          {invoice.imeiNumber || "-"}
+                        </td>
+                        <td className="align-middle">
+                          {new Date().toLocaleDateString("en-GB")}
+                        </td>
+                        <td className="align-middle">
+                          {invoice.closureDate || "-"}
+                        </td>
+                        <td className="align-middle">
+                          {invoice.customerName || "-"}
+                        </td>
+                        <td className="align-middle">
+                          {invoice.serviceType || "-"}
+                        </td>
                         <td className="align-middle">{invoice.brand || "-"}</td>
-                        <td className="align-middle">{invoice.makeModel || "-"}</td>
                         <td className="align-middle">
-                          {editingRow === invoice.aA_Number ? (
-                            <input
-                              type="number"
-                              name="repairCharges"
-                              value={editValues.repairCharges || ""}
-                              onChange={handleEditInputChange}
-                              className="form-control"
-                              style={{ width: "100px", display: "inline-block" }}
-                              min="0"
-                              step="0.01"
-                            />
-                          ) : (
-                            invoice.repairCharges || "0.00"
-                          )}
+                          {invoice.makeModel || "-"}
                         </td>
                         <td className="align-middle">
-                          {editingRow === invoice.aA_Number ? (
-                            <input
-                              type="number"
-                              name="serviceCharges"
-                              value={editValues.serviceCharges || ""}
-                              onChange={handleEditInputChange}
-                              className="form-control"
-                              style={{ width: "100px", display: "inline-block" }}
-                              min="0"
-                              step="0.01"
-                            />
-                          ) : (
-                            invoice.serviceCharges || "0.00"
-                          )}
+                          {invoice.repairCharges || "0.00"}
                         </td>
-                        <td className="align-middle">{invoice.total || "0.00"}</td>
+                        <td className="align-middle">
+                          {invoice.serviceCharges || "0.00"}
+                        </td>
+                        <td className="align-middle">
+                          {invoice.total || "0.00"}
+                        </td>
                         <td className="align-middle">
                           <span className="vendore_invoice_status px-3 py-1 rounded-pill">
                             {invoice.invoiceStatus || "-"}
@@ -2404,82 +1117,72 @@ function ApprovalBatchPage() {
                           onMouseEnter={() => setHoveredRow(index)}
                           onMouseLeave={() => setHoveredRow(null)}
                         >
-                          {getDifferencesData(invoice).length > 0 ? "Mismatch" : "Valid"}
-                          {hoveredRow === index && getDifferencesData(invoice).length > 0 && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: "-18%",
-                                transform: "translateX(-50%)",
-                                zIndex: 1000,
-                                backgroundColor: "#fff",
-                                border: "1px solid #ddd",
-                                padding: "10px",
-                                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
-                                minWidth: "300px",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              <table className="table table-sm table-bordered mb-0">
-                                <thead>
-                                  <tr>
-                                    <th>Field</th>
-                                    <th>Excel Data</th>
-                                    <th>System Data</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {getDifferencesData(invoice).map((diff, i) => (
-                                    <tr key={i}>
-                                      <td>{diff.field}</td>
-                                      <td>{diff.table}</td>
-                                      <td>{diff.api}</td>
+                          {getDifferencesData(invoice).length > 0
+                            ? "Mismatch"
+                            : "Valid"}
+                          {hoveredRow === index &&
+                            getDifferencesData(invoice).length > 0 && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  top: "100%",
+                                  left: "-18%",
+                                  transform: "translateX(-50%)",
+                                  zIndex: 1000,
+                                  backgroundColor: "#fff",
+                                  border: "1px solid #ddd",
+                                  padding: "10px",
+                                  boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+                                  minWidth: "300px",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                <table className="table table-sm table-bordered mb-0">
+                                  <thead>
+                                    <tr>
+                                      <th>Field</th>
+                                      <th>Excel Data</th>
+                                      <th>System Data</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
+                                  </thead>
+                                  <tbody>
+                                    {getDifferencesData(invoice).map(
+                                      (diff, i) => (
+                                        <tr key={i}>
+                                          <td>{diff.field}</td>
+                                          <td>{diff.table}</td>
+                                          <td>{diff.api}</td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                         </td>
                         <td className="align-middle">
-                          {editingRow === invoice.aA_Number ? (
-                            <input
-                              type="text"
-                              name="remarks"
-                              value={editValues.remarks || ""}
-                              onChange={handleEditInputChange}
-                              className="form-control"
-                              style={{ width: "150px", display: "inline-block" }}
-                              placeholder="Enter remarks"
-                            />
+                          {invoice.remarks || "no remarks"}
+                        </td>
+                        <td className="align-middle border-end">
+                          {invoice.remarkFile ? (
+                            <a
+                              href={invoice.remarkFile}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: "#8000d7", textDecoration: "underline" }}
+                            >
+                              View File
+                            </a>
                           ) : (
-                            invoice.remarks || "no remarks"
+                            "-"
                           )}
                         </td>
                         <td className="align-middle border-end">
-                          {editingRow === invoice.aA_Number ? (
-                            <>
-                              <FaSave
-                                size={20}
-                                className="text-green-500 me-2"
-                                style={{ cursor: "pointer", color: "green" }}
-                                onClick={() => handleSaveEdit(invoice.aA_Number)}
-                              />
-                              <FaTimes
-                                size={20}
-                                className="text-red-600"
-                                style={{ cursor: "pointer", color: "red" }}
-                                onClick={handleCancelEdit}
-                              />
-                            </>
-                          ) : (
-                            <FaTrash
-                              size={20}
-                              style={{ cursor: "pointer", color: "red" }}
-                              onClick={() => handleDelete(index)}
-                            />
-                          )}
+                          <FaTrash
+                            size={20}
+                            style={{ cursor: "pointer", color: "red" }}
+                            onClick={() => handleDelete(index)}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -2494,10 +1197,14 @@ function ApprovalBatchPage() {
               >
                 Previous
               </button>
-              <span className="page-info">Page {currentPage} of {totalPages}</span>
+              <span className="page-info">
+                Page {currentPage} of {totalPages}
+              </span>
               <button
                 className="btn btn-outline-primary"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={currentPage === totalPages}
               >
                 Next
@@ -2508,7 +1215,9 @@ function ApprovalBatchPage() {
                 className="batch_popup_gross_ammount p-2 d-flex align-items-center"
                 style={{ backgroundColor: "#eef4ff", marginTop: "1rem" }}
               >
-                <span className="fw-semibold text-secondary me-2">Total no of selected invoices:</span>
+                <span className="fw-semibold text-secondary me-2">
+                  Total no of selected invoices:
+                </span>
                 <span className="fw-bold text-dark">{selectedAAno.length}</span>
               </div>
               <div
@@ -2516,31 +1225,45 @@ function ApprovalBatchPage() {
                 style={{ backgroundColor: "#eef4ff", marginTop: "1rem" }}
               >
                 <div className="text-start batch_popup_amount">
-                  <div className="fw-bold batch_gross">Total Repair Charges</div>
-                  <div className="batch_amount_to_fix">₹ {parseFloat(totalRepairCharges).toFixed(2)}</div>
+                  <div className="fw-bold batch_gross">
+                    Total Repair Charges
+                  </div>
+                  <div className="batch_amount_to_fix">
+                    ₹ {parseFloat(totalRepairCharges).toFixed(2)}
+                  </div>
                 </div>
                 <div className="text-start batch_popup_amount">
-                  <div className="fw-bold batch_gross">Total Service Charges</div>
-                  <div className="batch_amount_to_fix">₹ {parseFloat(totalServiceCharges).toFixed(2)}</div>
+                  <div className="fw-bold batch_gross">
+                    Total Service Charges
+                  </div>
+                  <div className="batch_amount_to_fix">
+                    ₹ {parseFloat(totalServiceCharges).toFixed(2)}
+                  </div>
                 </div>
                 <div className="text-start batch_popup_amount">
                   <div className="fw-bold batch_gross">Total Gross Amount</div>
-                  <div className="batch_amount_to_fix">₹ {grossAmount.toFixed(2)}</div>
+                  <div className="batch_amount_to_fix">
+                    ₹ {grossAmount.toFixed(2)}
+                  </div>
                 </div>
                 <div className="text-start batch_popup_amount">
                   <div className="fw-bold batch_gross">Total Amount</div>
                   <div className="batch_amount_to_fix">₹ {finalAmount}</div>
-                  <div className="batch_gross ms-2">({isGSTApplied ? "incl GST 18%" : "excl GST"})</div>
+                  <div className="batch_gross ms-2">
+                    ({isGSTApplied ? "incl GST 18%" : "excl GST"})
+                  </div>
                 </div>
                 <div className="mt-2 ms-2">
                   <span className="fw-semibold text-secondary">
-                    {isGSTApplied ? `GST Amount Added: ₹${gstAmount}` : `Total GST Amount: ₹${gstAmount}`}
+                    GST Amount Added: ₹{gstAmount}
                   </span>
                 </div>
               </div>
             </div>
             <div className="d-flex justify-content-between align-items-center border rounded p-3 mt-4">
-              <div className="fw-bold ms-2"><span>GST</span></div>
+              <div className="fw-bold ms-2">
+                <span>GST</span>
+              </div>
               <div className="d-flex gap-3">
                 <label className="regestration_kc_radio">
                   <input
@@ -2574,33 +1297,73 @@ function ApprovalBatchPage() {
                     <label className="me-2 fw-semibold w-50">Case Count</label>
                     <input
                       type="text"
-                      className={`form-control border-dark ${(uploadedFile || !existingInvoice.url) && fieldErrors.caseCount ? "is-invalid" : ""
-                        }`}
+                      className={`form-control border-dark ${
+                        (uploadedFile || !existingInvoice.url) &&
+                        (fieldErrors.caseCount || caseCountError)
+                          ? "is-invalid"
+                          : ""
+                      }`}
                       placeholder="Case Count"
                       value={caseCount}
                       onChange={(e) => {
                         const value = e.target.value;
                         setCaseCount(value);
                         if (uploadedFile || !existingInvoice.url) {
+                          const parsedValue = parseInt(value);
                           setFieldErrors((prev) => ({
                             ...prev,
-                            caseCount: !value.trim() || isNaN(value) || parseInt(value) <= 0,
+                            caseCount:
+                              !value.trim() ||
+                              isNaN(parsedValue) ||
+                              parsedValue <= 0,
                           }));
+                          if (
+                            value.trim() &&
+                            !isNaN(parsedValue) &&
+                            parsedValue > 0
+                          ) {
+                            if (parsedValue !== selectedAAno.length) {
+                              setCaseCountError(
+                                "Case Count must match the total number of selected invoices."
+                              );
+                            } else {
+                              setCaseCountError("");
+                            }
+                          } else {
+                            setCaseCountError("");
+                          }
                         }
                       }}
                     />
-                    {(uploadedFile || !existingInvoice.url) && fieldErrors.caseCount && (
-                      <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
-                        Case Count must be a valid positive number.
-                      </div>
-                    )}
+                    {(uploadedFile || !existingInvoice.url) &&
+                      fieldErrors.caseCount && (
+                        <div
+                          className="text-danger mt-1"
+                          style={{ fontSize: "14px" }}
+                        >
+                          Case Count must be a valid positive number.
+                        </div>
+                      )}
+                    {(uploadedFile || !existingInvoice.url) &&
+                      caseCountError && (
+                        <div
+                          className="text-danger mt-1"
+                          style={{ fontSize: "14px" }}
+                        >
+                          {caseCountError}
+                        </div>
+                      )}
                   </div>
                   <div className="col-md-4 align-items-center mb-3">
                     <label className="me-2 fw-semibold w-50">Invoice No</label>
                     <input
                       type="text"
-                      className={`form-control border-dark ${(uploadedFile || !existingInvoice.url) && fieldErrors.invoiceNo ? "is-invalid" : ""
-                        }`}
+                      className={`form-control border-dark ${
+                        (uploadedFile || !existingInvoice.url) &&
+                        fieldErrors.invoiceNo
+                          ? "is-invalid"
+                          : ""
+                      }`}
                       placeholder="Invoice No"
                       value={invoiceNo}
                       onChange={(e) => {
@@ -2614,18 +1377,28 @@ function ApprovalBatchPage() {
                         }
                       }}
                     />
-                    {(uploadedFile || !existingInvoice.url) && fieldErrors.invoiceNo && (
-                      <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
-                        Invoice No is required.
-                      </div>
-                    )}
+                    {(uploadedFile || !existingInvoice.url) &&
+                      fieldErrors.invoiceNo && (
+                        <div
+                          className="text-danger mt-1"
+                          style={{ fontSize: "14px" }}
+                        >
+                          Invoice No is required.
+                        </div>
+                      )}
                   </div>
                   <div className="col-md-4 align-items-center mb-3">
-                    <label className="me-2 fw-semibold w-50">Invoice Date</label>
+                    <label className="me-2 fw-semibold w-50">
+                      Invoice Date
+                    </label>
                     <input
                       type="date"
-                      className={`form-control border-dark ${(uploadedFile || !existingInvoice.url) && fieldErrors.invoiceDate ? "is-invalid" : ""
-                        }`}
+                      className={`form-control border-dark ${
+                        (uploadedFile || !existingInvoice.url) &&
+                        fieldErrors.invoiceDate
+                          ? "is-invalid"
+                          : ""
+                      }`}
                       value={invoiceDate}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -2633,39 +1406,62 @@ function ApprovalBatchPage() {
                         if (uploadedFile || !existingInvoice.url) {
                           setFieldErrors((prev) => ({
                             ...prev,
-                            invoiceDate: !value.trim() || value > new Date().toISOString().split("T")[0],
+                            invoiceDate:
+                              !value.trim() ||
+                              value > new Date().toISOString().split("T")[0],
                           }));
                         }
                       }}
                       max={new Date().toISOString().split("T")[0]}
                     />
-                    {(uploadedFile || !existingInvoice.url) && fieldErrors.invoiceDate && (
-                      <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
-                        Invoice Date is required and cannot be future.
-                      </div>
-                    )}
+                    {(uploadedFile || !existingInvoice.url) &&
+                      fieldErrors.invoiceDate && (
+                        <div
+                          className="text-danger mt-1"
+                          style={{ fontSize: "14px" }}
+                        >
+                          Invoice Date is required and cannot be future.
+                        </div>
+                      )}
                   </div>
                   <div className="col-md-4 align-items-center mb-3">
-                    <label className="me-2 fw-semibold w-50">Invoice Amount</label>
+                    <label className="me-2 fw-semibold w-50">
+                      Invoice Amount
+                    </label>
                     <input
                       type="text"
-                      className={`form-control border-dark ${(uploadedFile || !existingInvoice.url) && (fieldErrors.invoiceAmount || amountError)
+                      className={`form-control border-dark ${
+                        (uploadedFile || !existingInvoice.url) &&
+                        (fieldErrors.invoiceAmount || amountError)
                           ? "is-invalid"
                           : ""
-                        }`}
+                      }`}
                       placeholder="Enter Amount"
                       value={invoiceAmount}
                       onChange={(e) => {
                         const enteredAmount = e.target.value;
                         setInvoiceAmount(enteredAmount);
                         if (uploadedFile || !existingInvoice.url) {
+                          const parsedAmount = parseFloat(enteredAmount);
                           setFieldErrors((prev) => ({
                             ...prev,
-                            invoiceAmount: !enteredAmount.trim() || isNaN(enteredAmount) || parseFloat(enteredAmount) <= 0,
+                            invoiceAmount:
+                              !enteredAmount.trim() ||
+                              isNaN(parsedAmount) ||
+                              parsedAmount <= 0,
                           }));
-                          if (enteredAmount.trim() && !isNaN(enteredAmount)) {
-                            if (Math.abs(parseFloat(enteredAmount) - parseFloat(finalAmount)) > 0.01) {
-                              setAmountError("Invoice Amount and Total Amount do not match.");
+                          if (
+                            enteredAmount.trim() &&
+                            !isNaN(parsedAmount) &&
+                            parsedAmount > 0
+                          ) {
+                            if (
+                              Math.abs(parsedAmount - parseFloat(finalAmount)) >
+                              0.01
+                            ) {
+                              setAmountError(
+                                "Invoice Amount must match Total Amount."
+                              );
                             } else {
                               setAmountError("");
                             }
@@ -2675,13 +1471,22 @@ function ApprovalBatchPage() {
                         }
                       }}
                     />
-                    {(uploadedFile || !existingInvoice.url) && fieldErrors.invoiceAmount && (
-                      <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
-                        Invoice Amount must be a valid positive number.
+                    {(uploadedFile || !existingInvoice.url) &&
+                      fieldErrors.invoiceAmount && (
+                        <div
+                          className="text-danger mt-1"
+                          style={{ fontSize: "14px" }}
+                        >
+                          Invoice Amount must be a valid positive number.
+                        </div>
+                      )}
+                    {(uploadedFile || !existingInvoice.url) && amountError && (
+                      <div
+                        className="text-danger mt-1"
+                        style={{ fontSize: "14px" }}
+                      >
+                        {amountError}
                       </div>
-                    )}
-                    {amountError && (
-                      <div className="text-danger mt-1" style={{ fontSize: "14px" }}>{amountError}</div>
                     )}
                   </div>
                 </div>
@@ -2711,48 +1516,136 @@ function ApprovalBatchPage() {
                   backgroundColor: "#8000d7",
                   border: "none",
                   padding: "10px 16px",
-                  fontWeight: "500",
+                  fontWeight: "bold",
                   fontSize: "16px",
                   color: "white",
                 }}
                 disabled={loading}
               >
-                <span>{loading ? "Submitting..." : "Save"}</span>
+                <span>{loading ? "Submitting..." : "Approve"}</span>
               </Button>
               <Button
-                onClick={() => handleSendAction("Send Back")}
+                onClick={handleSendAction}
                 className="d-flex align-items-center"
                 style={{
                   backgroundColor: "#8000d7",
                   border: "none",
                   padding: "10px 16px",
-                  fontWeight: "500",
+                  fontWeight: "bold",
                   fontSize: "16px",
                   color: "white",
                 }}
                 disabled={loading}
               >
-                <span>{loading ? "Submitting..." : "Send Back"}</span>
-              </Button>
-              <Button
-                onClick={() => handleSendAction("Send Partial")}
-                className="d-flex align-items-center"
-                style={{
-                  backgroundColor: "#8000d7",
-                  border: "none",
-                  padding: "10px 16px",
-                  fontWeight: "500",
-                  fontSize: "16px",
-                  color: "white",
-                }}
-                disabled={loading}
-              >
-                <span>{loading ? "Submitting..." : "Send Partial"}</span>
+                <span>{loading ? "Submitting..." : "Partial Or Back"}</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
+
+      <Modal show={showEditModal} onHide={handleCloseModal} centered size="lg">
+        <Modal.Header closeButton style={{ backgroundColor: "#EBF3FF" }}>
+          <Modal.Title>
+            Edit Invoice (AA No: {editingInvoice?.aA_Number})
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Repair Charges</Form.Label>
+              <Form.Control
+                type="number"
+                name="repairCharges"
+                value={editValues.repairCharges}
+                onChange={handleEditInputChange}
+                min="0"
+                step="0.01"
+                placeholder="Enter Repair Charges"
+                size="lg"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Service Charges</Form.Label>
+              <Form.Control
+                type="number"
+                name="serviceCharges"
+                value={editValues.serviceCharges}
+                onChange={handleEditInputChange}
+                min="0"
+                step="0.01"
+                size="lg"
+                placeholder="Enter Services"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Remarks</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                name="remarks"
+                value={editValues.remarks}
+                onChange={handleEditInputChange}
+                placeholder="Enter Remarks"
+                className={
+                  fieldErrors.remarks[editingInvoice?.aA_Number]
+                    ? "is-invalid"
+                    : ""
+                }
+              />
+              {fieldErrors.remarks[editingInvoice?.aA_Number] && (
+                <div className="text-danger mt-1" style={{ fontSize: "14px" }}>
+                  Remarks are required for mismatched data.
+                </div>
+              )}
+            </Form.Group>
+            <Form.Group controlId="formFile" className="mb-0">
+              <Form.Label
+                htmlFor="fileUpload"
+                className="btn btn-secondary mb-0"
+                style={{ backgroundColor: "#8000d7", border: "none" }}
+              >
+                Upload Remark File
+              </Form.Label>
+              <Form.Control
+                type="file"
+                id="fileUpload"
+                name="remarkFile"
+                onChange={handleRemarkFileChange}
+                style={{ display: "none" }}
+              />
+              {editValues.remarkFile && (
+                <div
+                  className="mt-2"
+                  style={{ fontWeight: "bold", color: "green" }}
+                >
+                  Selected File: {editValues.remarkFile.name || editValues.remarkFile}
+                </div>
+              )}
+              {editingInvoice?.remarkFile && !editValues.remarkFile && (
+                <div
+                  className="mt-2"
+                  style={{ fontWeight: "bold", color: "green" }}
+                >
+                  Existing File: <a href={editingInvoice.remarkFile} target="_blank" rel="noopener noreferrer">View Current File</a>
+                </div>
+              )}
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="danger" onClick={handleCloseModal}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => handleSaveEdit(editingInvoice?.aA_Number)}
+            style={{ backgroundColor: "#8000d7", border: "none" }}
+          >
+            Save
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

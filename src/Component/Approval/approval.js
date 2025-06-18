@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { FaFilePdf, FaEye, FaSearch, FaRegCalendarAlt } from "react-icons/fa";
 import { Dropdown, Table, Button } from "react-bootstrap";
 import { FaChevronDown } from "react-icons/fa";
@@ -22,7 +22,7 @@ function Approval() {
   const dateInputRef = useRef(null);
   const [invoices, setInvoices] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const { user } = React.useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const handleIconClick = () => {
     dateInputRef.current?.setFocus();
   };
@@ -199,45 +199,53 @@ function Approval() {
     }
   };
 
-  const invoiceOptions = ["Approve", "Reject",];
+  const invoiceOptions = ["Approve", "Reject"];
 
-const handleInvoiceStatusChange = async (index, newStatus) => {
-  const globalIndex = indexOfFirstItem + index;
-  const selectedInvoice = filteredInvoices[globalIndex];
-  const batchNo = selectedInvoice?.batchNo;
-
-  try {
-    const response = await updateInvoiceStatusNetworkForApproved({
-      batchNo,
-      invoiceStatus: newStatus,
-    });
-
-    setInvoices((prev) =>
-      prev.map((item) =>
-        item.batchNo === batchNo
-          ? {
-              ...item,
-              invoiceStatus: newStatus,
-              financeStatus:
-                newStatus === "Approved" ? "Submitted" : item.financeStatus,
-            }
-          : item
-      )
-    );
-
-    toast.success("Invoice status updated successfully!");
-
-    if (newStatus === "Approve") {
-      navigate("/approvalBatchPage", {
-        state: { batchData: selectedInvoice },
+  const handleInvoiceStatusChange = async (index, newStatus) => {
+    const globalIndex = indexOfFirstItem + index;
+    const selectedInvoice = filteredInvoices[globalIndex];
+    const batchNo = selectedInvoice?.batchNo;
+    try {
+      const response = await updateInvoiceStatusNetworkForApproved({
+        batchNo,
+        invoiceStatus: newStatus,
       });
-    }
-  } catch (err) {
-    console.error("Failed to update invoice status:", err);
-    toast.error("Failed to update invoice status");
-  }
-};
+      setInvoices((prev) =>
+        prev.map((item) =>
+          item.batchNo === batchNo
+            ? {
+                ...item,
+                invoiceStatus: newStatus,
+                financeStatus:
+                  newStatus === "Approved" ? "Submitted" : item.financeStatus,
+              }
+            : item
+        )
+      );
 
+      if (newStatus === "Approve") {
+        // navigate("/approvalBatchPage", {
+        //   state: { batchData: selectedInvoice },
+        // });
+
+        navigate("/approvalBatchPage", {
+          state: {
+            batchData: selectedInvoice,
+            batchNo: batchNo,
+            invoiceStatus: newStatus,
+          },
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update invoice status:", err);
+      toast.error("Failed to update invoice status");
+    }
+  };
+
+  const filteredInvoiceOptions =
+    user?.role === "NetworkSubAdmin"
+      ? invoiceOptions.filter((option) => option !== "Approve")
+      : invoiceOptions;
   return (
     <div>
       <ToastContainer />
@@ -384,16 +392,8 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
                         {invoice.totalServiceCharges || "--"}
                       </td>
                       <td className="align-middle">
-                        {invoice.total
-                          ? `${invoice.total
-                            .split(",")
-                            .map((val) => parseFloat(val.trim()))
-                            .reduce(
-                              (acc, num) => acc + (isNaN(num) ? 0 : num),
-                              0
-                            )
-                            .toLocaleString()}`
-                          : "--"}
+                       
+                           {invoice.finalAmount || "--"}
                       </td>
                       <td
                         className="align-middle"
@@ -401,7 +401,7 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
                       >
                         {invoice.remarks
                           ? invoice.remarks.split(" ").slice(0, 3).join(" ") +
-                          (invoice.remarks.split(" ").length > 3 ? "..." : "")
+                            (invoice.remarks.split(" ").length > 3 ? "..." : "")
                           : "No remark"}
                       </td>
 
@@ -434,8 +434,9 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
                               {invoice.invoiceStatus || "Batch"}{" "}
                               <FaChevronDown className="dropdown-icon" />
                             </Dropdown.Toggle>
+
                             <Dropdown.Menu className="custom-dropdown-menu">
-                              {invoiceOptions.map((status) => (
+                              {filteredInvoiceOptions.map((status) => (
                                 <Dropdown.Item
                                   key={status}
                                   onClick={() =>
@@ -445,19 +446,6 @@ const handleInvoiceStatusChange = async (index, newStatus) => {
                                 >
                                   {status}
                                 </Dropdown.Item>
-                                // <Dropdown.Item
-                                //   key={status}
-                                //   onClick={() => {
-                                //     handleInvoiceStatusChange(index, status);
-
-                                //     if (status === "Approve") {
-                                //         window.location.href = "/approvalBatchPage"; 
-                                //     }
-                                //   }}
-                                //   className="custom-dropdown-item"
-                                // >
-                                //   {status}
-                                // </Dropdown.Item>
                               ))}
                             </Dropdown.Menu>
                           </Dropdown>

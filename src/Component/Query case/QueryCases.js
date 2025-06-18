@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect } from "react";
 import Header from "../Header/header";
 import { IoFilterSharp } from "react-icons/io5";
@@ -10,27 +12,23 @@ import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
 import { FaCirclePlus } from "react-icons/fa6";
-// import Search_vendor_popup from "./search_vendor_popup";
 import pdf_img from "../images/pdf_downlaod.png";
 import random_pdf from "../images/dummy-pdf_2.pdf";
-// import HoldPopUp from "./HoldPopUp";
-// import { FormControl, Select, MenuItem, InputLabel } from "@mui/material";
-// import { FaChevronDown } from "react-icons/fa";
 import {
-  GetAllRejectedlBatchDatafromSubmit,
+  GetAllGetQueryData,
   updateBatchInvoiceStatus,
   updateBatchFinanceStatus,
 } from "../../api/api";
 import { Circles } from "react-loader-spinner";
-// import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-// import { ReviewHooksFile } from "./reviewHooksFile";
+import QuaryPopUp from "./QuaryPopUp";
+import { IconButton } from "@mui/material";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import RejectPopUp from "./RejectPopUp";
+import { useNavigate } from "react-router-dom";
 
-function HoldCase() {
+function QueryCases() {
   const [invoicesData, setInvoicesData] = useState([]);
+  console.log(invoicesData, "get all hold data");
   const [vendorSearch, setVendorSearch] = useState("");
   const [srnSearch, setSrnSearch] = useState("");
   const [searchInvoiceNo, setSeachInvoiceNo] = useState("");
@@ -38,12 +36,12 @@ function HoldCase() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRowData, setSelectedRowData] = useState(null);
-  // console.log("lala", selectedRowData);
-  // const [selectedStatus, setSelectedStatus] = useState("");
+  console.log("lala", selectedRowData);
   const [showHoldModal, setShowHoldModal] = useState(false);
   const itemsPerPage = 8;
   const dateInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const invoiceOptions = [
     "Invoice",
@@ -148,7 +146,6 @@ function HoldCase() {
           srnMatch &&
           batchMatch &&
           dateMatch &&
-          // statusMatch &&
           invoiceNoMatch
         );
       })
@@ -161,7 +158,6 @@ function HoldCase() {
     srnSearch,
     batchSearch,
     selectedDate,
-    // selectedStatus,
     searchInvoiceNo,
   ]);
 
@@ -250,12 +246,16 @@ function HoldCase() {
     }
   };
 
+  const handleViewRow = (invoice) => {
+    navigate("/queryCasesPage", { state: { invoice } });
+  };
+
   useEffect(() => {
     const getData = async () => {
       setLoading(true);
       try {
-        const data = await GetAllRejectedlBatchDatafromSubmit();
-        // console.log("This is data ", data);
+        const data = await GetAllGetQueryData();
+        console.log("This is data ", data);
         if (Array.isArray(data.dataItems)) {
           setInvoicesData(data.dataItems);
         } else {
@@ -272,31 +272,15 @@ function HoldCase() {
     getData();
   }, []);
 
-  // console.log(currentInvoices, "current Invoice");
   return (
     <div>
-      {/* <Header /> */}
       <ToastContainer />
       <div className="container mt-4">
         <div className="netwrok_table_main_content">
-          <div className="d-flex justify-content-between  network_filter_div">
-            <h5 className="fw-bold m-0">Rejected Cases</h5>
-            {/* <button
-              className="btn btn-primary d-flex align-items-center"
-              style={{
-                backgroundColor: "#8000d7", // Custom purple
-                border: "none",
-                padding: "10px 20px",
-                borderRadius: "8px",
-                fontWeight: "500",
-                fontSize: "16px",
-              }}
-              onClick={() => setShowHoldModal(true)}>
-              <FaCirclePlus className="me-2" />
-              Create Batch
-            </button> */}
+          <div className="d-flex justify-content-between network_filter_div">
+            <h5 className="fw-bold m-0">Query Cases</h5>
           </div>
-          <div className="d-flex justify-content-between  network_filter_div">
+          <div className="d-flex justify-content-between network_filter_div">
             <div className="d-flex justify-content-between align-items-center all_search_input">
               <div
                 className="review_batch_seach input-group"
@@ -354,7 +338,7 @@ function HoldCase() {
               </div>
             </div>
 
-            <div className="d-flex justify-content-between  all_search_input">
+            <div className="d-flex justify-content-between all_search_input">
               <div
                 className="custom_date_wrapper review_batch_seach"
                 style={{ maxWidth: "240px" }}
@@ -374,7 +358,6 @@ function HoldCase() {
             </div>
           </div>
           {loading ? (
-            // <div className="text-center mt-4">Loading invoices...</div>
             <div
               className="d-flex justify-content-center align-items-center"
               style={{ height: "200px" }}
@@ -393,12 +376,10 @@ function HoldCase() {
                 <thead style={{ backgroundColor: "#EEF4FF" }}>
                   <tr className="text-dark fw-semibold table_th_border">
                     <th className="border-start">View</th>
-
                     <th style={{ whiteSpace: "nowrap" }}>Batch No</th>
                     <th style={{ whiteSpace: "nowrap" }}>Vendor Name</th>
                     <th style={{ whiteSpace: "nowrap" }}>Approval Date</th>
                     <th style={{ whiteSpace: "nowrap" }}>Case Count</th>
-
                     <th style={{ whiteSpace: "nowrap" }}>Invoice No</th>
                     <th style={{ whiteSpace: "nowrap" }}>Invoice Date</th>
                     <th style={{ whiteSpace: "nowrap" }}>Invoice Amount</th>
@@ -423,39 +404,21 @@ function HoldCase() {
                       className="text-center border-bottom network_td_item"
                     >
                       <td className="border-start align-middle">
-                        <FaEye
-                          className="text-purple review_fa_eye"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            setSelectedRowData(invoice); // set the row data
-                            setShowHoldModal(true); // open popup
-                          }}
-                        />
+                        <IconButton onClick={() => handleViewRow(invoice)}>
+                          <FaEye
+                            className="text-purple review_fa_eye"
+                            style={{ cursor: "pointer" }}
+                            size={20}
+                          />
+                        </IconButton>
                       </td>
-
-                      <td className="align-middle">
-                        {invoice.batchNo ?? "--"}
-                      </td>
+                      <td className="align-middle">{invoice.batchNo ?? "--"}</td>
                       <td className="align-middle">
                         {invoice.vendorName ?? "--"}
                       </td>
                       <td className="align-middle">
                         {invoice.approvalDate ?? "--"}
                       </td>
-                      {/* <td className="align-middle">
-                        {invoice.batchCreationDate
-                          ? new Date(
-                              invoice.batchCreationDate
-                            ).toLocaleDateString("en-GB")
-                          : "--"}
-                      </td>
-                      <td className="align-middle">
-                        {invoice.batchClosureDate
-                          ? new Date(
-                              invoice.batchClosureDate
-                            ).toLocaleDateString("en-GB")
-                          : "--"}
-                      </td> */}
                       <td className="align-middle">
                         {invoice.caseCount ?? "--"}
                       </td>
@@ -480,9 +443,7 @@ function HoldCase() {
                       </td>
                       <td className="align-middle">{invoice.gst ?? "--"}</td>
                       <td className="align-middle">{invoice.tds ?? "--"}</td>
-                      <td className="align-middle">
-                        {invoice.payable ?? "--"}
-                      </td>
+                      <td className="align-middle">{invoice.payable ?? "--"}</td>
                       <td className="align-middle">
                         {invoice.pdf ? (
                           <a
@@ -514,7 +475,6 @@ function HoldCase() {
                       </td>
                       <td className="align-middle">{invoice.date ?? "--"}</td>
                       <td className="align-middle">{invoice.issue ?? "--"}</td>
-                      {/* Invoice Status Dropdown */}
                       <td className="align-middle">
                         {invoice.invoiceStatus !== "Approved" ? (
                           <Dropdown className="network_table_main">
@@ -552,8 +512,6 @@ function HoldCase() {
                           </div>
                         )}
                       </td>
-
-                      {/* Finance Status Dropdown */}
                       <td className="align-middle border-end">
                         <div className="network_table_main">
                           <span
@@ -581,7 +539,7 @@ function HoldCase() {
             >
               Previous
             </button>
-            <span className="page-info ">
+            <span className="page-info">
               Page {currentPage} of {totalPages}
             </span>
             <button
@@ -594,7 +552,7 @@ function HoldCase() {
           </div>
         </div>
       </div>
-      <RejectPopUp
+      <QuaryPopUp
         show={showHoldModal}
         handleClose={() => setShowHoldModal(false)}
         selectedData={selectedRowData}
@@ -603,4 +561,4 @@ function HoldCase() {
   );
 }
 
-export default HoldCase;
+export default QueryCases;

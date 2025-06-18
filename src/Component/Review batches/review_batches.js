@@ -435,9 +435,7 @@ function Review_batches() {
                                 const selectedBatchData = {
                                   aaNo: invoice.aaNo || "",
                                   imeiNo: invoice.imeiNo || "",
-                                  creationDate:
-                                    invoice.creationDate ||
-                                    new Date().toLocaleDateString("en-GB"),
+                                  creationDate:invoice.creationDate ||new Date().toLocaleDateString("en-GB"),
                                   closureDate: invoice.closureDate || "",
                                   customerName: invoice.customerName || "",
                                   serviceType: invoice.serviceType || "",
@@ -451,6 +449,11 @@ function Review_batches() {
                                   batchNo: invoice.batchNo || "",
                                   vendorName: invoice.vendorName || "",
                                   remarks: invoice.remarks || "",
+                                  caseCount: invoice.caseCount || "",
+                                  invoiceNo: invoice.invoiceNo || "",
+                                  invoiceDate: invoice.invoiceDate || "",
+                                  invoiceAmount: invoice.invoiceAmount || "",
+                                  remarkFile: invoice.remarkFile || "",
                                 };
                                 navigate("/ReviewBatchPage", {
                                   state: {

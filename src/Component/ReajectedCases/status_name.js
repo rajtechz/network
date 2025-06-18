@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Dropdown, Table } from "react-bootstrap";
 import { FaEye, FaChevronDown } from "react-icons/fa";
-import "../../../node_modules/bootstrap/dist/js/bootstrap.bundle.min";
+import "bootstrap/dist/js/bootstrap.bundle.min";
 import { GetUpdatedStatusData } from "../../api/api";
 
 const StatusUpdaterTable = () => {

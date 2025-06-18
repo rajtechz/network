@@ -235,7 +235,7 @@ function GetNetworkReject() {
       <div className="container mt-4">
         <div className="netwrok_table_main_content">
           <div className="d-flex justify-content-between align-items-center network_filter_div">
-            <h5 className="fw-bold m-0">Approval Data</h5>
+            <h5 className="fw-bold m-0">Network Rejected Data</h5>
           </div>
           <div className="table-responsive mt-3">
             <div className="d-flex justify-content-between network_filter_div">
@@ -346,8 +346,8 @@ function GetNetworkReject() {
                         <FaEye
                           className="text-purple review_fa_eye"
                           onClick={() => {
-                            navigate("/approvalBatchPage", {
-                              state: { batchData: invoice },
+                            navigate("/networkRejectPage", {
+                              state: { invoice: invoice },
                             });
                           }}
                         />

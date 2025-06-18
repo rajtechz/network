@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import Raise_concern_popup from "./raise_concern_popup";
 import { FaDownload } from "react-icons/fa";
 import { getAllClaimDetailsPrefiled } from "../../api/api";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const InvoiceTemplate = () => {
+  const navigate = useNavigate();
   const [activeCollapse, setActiveCollapse] = useState("first");
 
   const toggleCollapse = (section) => {
@@ -802,6 +803,7 @@ const InvoiceTemplate = () => {
             style={{ marginTop: "50px" }}
           >
             <button
+            onClick={() => navigate(-1)}
               className="btn btn-primary d-flex align-items-center"
               style={{
                 backgroundColor: "#fff",

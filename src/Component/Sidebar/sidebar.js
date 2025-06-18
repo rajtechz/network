@@ -4,12 +4,12 @@ import topLogo from "../images/headerimg.png";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import PauseCircleOutlineIcon from "@mui/icons-material/PauseCircleOutline";
-import UndoIcon from '@mui/icons-material/Undo';
-import BlockIcon from '@mui/icons-material/Block';
-import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import ReportProblemIcon from '@mui/icons-material/ReportProblem';
-import PendingIcon from '@mui/icons-material/Pending';
+import UndoIcon from "@mui/icons-material/Undo";
+import BlockIcon from "@mui/icons-material/Block";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
+import PendingIcon from "@mui/icons-material/Pending";
 
 import ReportProblemOutlinedIcon from "@mui/icons-material/ReportProblemOutlined";
 import {
@@ -145,6 +145,27 @@ const Sidebar = ({ open, toggleSidebar }) => {
             </ListItem>
             <ListItem
               component={NavLink}
+              to="/sendBackByapproval"
+              onClick={handleMenuClick}
+              sx={{
+                "&.active, &.Mui-selected": {
+                  backgroundColor: "red",
+                  color: "white",
+                  "& .MuiListItemText-root, & .MuiTypography-root": {
+                    color: "white",
+                  },
+                  "& .MuiListItemIcon-root": { color: "white" },
+                },
+                color: "inherit",
+              }}
+            >
+              <ListItemIcon style={{ minWidth: "40px" }}>
+                <UndoIcon />
+              </ListItemIcon>
+              <ListItemText primary="Back From Approval" />
+            </ListItem>
+            <ListItem
+              component={NavLink}
               to="/reajected-cases"
               onClick={handleMenuClick}
               sx={{
@@ -163,27 +184,6 @@ const Sidebar = ({ open, toggleSidebar }) => {
                 <CancelIcon />
               </ListItemIcon>
               <ListItemText primary="Rejected Cases" />
-            </ListItem>
-            <ListItem
-              component={NavLink}
-              to="/sendBackByapproval"
-              onClick={handleMenuClick}
-              sx={{
-                "&.active, &.Mui-selected": {
-                  backgroundColor: "red",
-                  color: "white",
-                  "& .MuiListItemText-root, & .MuiTypography-root": {
-                    color: "white",
-                  },
-                  "& .MuiListItemIcon-root": { color: "white" },
-                },
-                color: "inherit",
-              }}
-            >
-              <ListItemIcon style={{ minWidth: "40px" }}>
-                <UndoIcon />
-              </ListItemIcon>
-              <ListItemText  primary="Back From Approval" />
             </ListItem>
 
             <ListItem

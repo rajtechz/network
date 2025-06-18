@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import Header from "../Header/header";
 import { IoFilterSharp } from "react-icons/io5";
 import { FaFilePdf } from "react-icons/fa";
@@ -10,28 +11,22 @@ import "react-datepicker/dist/react-datepicker.css";
 import { FaRegCalendarAlt } from "react-icons/fa";
 import { FaPlus } from "react-icons/fa";
 import { FaCirclePlus } from "react-icons/fa6";
-// import Search_vendor_popup from "./search_vendor_popup";
 import pdf_img from "../images/pdf_downlaod.png";
 import random_pdf from "../images/dummy-pdf_2.pdf";
-// import HoldPopUp from "./HoldPopUp";
-// import { FormControl, Select, MenuItem, InputLabel } from "@mui/material";
-// import { FaChevronDown } from "react-icons/fa";
 import {
-  GetAllGetQueryData,
+  GetAllRejectedlBatchDatafromSubmit,
   updateBatchInvoiceStatus,
   updateBatchFinanceStatus,
 } from "../../api/api";
 import { Circles } from "react-loader-spinner";
-// import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-// import { ReviewHooksFile } from "./reviewHooksFile";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import QuaryPopUp from "./QuaryPopUp";
+import RejectPopUp from "./RejectPopUp";
+import { IconButton } from "@mui/material";
 
-function HoldCase() {
+function Reajectedcases() {
+  const navigate = useNavigate(); // Initialize navigate
   const [invoicesData, setInvoicesData] = useState([]);
-  console.log(invoicesData, "get all hold data");
   const [vendorSearch, setVendorSearch] = useState("");
   const [srnSearch, setSrnSearch] = useState("");
   const [searchInvoiceNo, setSeachInvoiceNo] = useState("");
@@ -39,8 +34,6 @@ function HoldCase() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedRowData, setSelectedRowData] = useState(null);
-console.log("lala",selectedRowData)
-  // const [selectedStatus, setSelectedStatus] = useState("");
   const [showHoldModal, setShowHoldModal] = useState(false);
   const itemsPerPage = 8;
   const dateInputRef = useRef(null);
@@ -72,39 +65,29 @@ console.log("lala",selectedRowData)
     : [];
 
   const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case "Batch":
+    switch (status.toLowerCase()) {
+      case "batch":
         return "batch_badge_orange";
-      case "Approved":
-        return "approved_badge_green";
       case "approved":
         return "approved_badge_green";
-      case "Submitted":
+      case "submitted":
         return "submitted_badge_red";
-      case "Invoice":
+      case "invoice":
         return "invoice_badge_blue";
       case "hold":
-        return "batch_badge_orange";
-      case "Hold":
-        return "batch_badge_orange";
-      case "Rejected":
-        return "rejected_badge_red";
+        return "batch_badge";
       case "rejected":
         return "rejected_badge_red";
-      case "Paid":
-        return "paid_badge_red";
       case "paid":
         return "paid_badge_red";
-      case "Query":
-        return "query_badge_red";
-      case "Partial Payment":
-        return "partial_badge_red";
-      case "Partial Approved":
-        return "partial_approved_badge_red";
       case "query":
         return "query_badge_red";
-      case "bank":
-        return "bank_badge";
+      case "partial payment":
+        return "partial_badge_red";
+      case "partial approved":
+        return "partial_approved_badge_red";
+      case "bank reject":
+        return "bank_badge_red";
       default:
         return "badge-gray";
     }
@@ -112,6 +95,10 @@ console.log("lala",selectedRowData)
 
   const handleIconClick = () => {
     dateInputRef.current?.setFocus();
+  };
+
+  const handleViewRow = (invoice) => {
+    navigate("/reajectedcasesPage", { state: { invoice } });
   };
 
   const handleNext = () => {
@@ -144,28 +131,15 @@ console.log("lala",selectedRowData)
           ? invoiceDateObj.toDateString() === selectedDate.toDateString()
           : true;
 
-        
         return (
-          vendorMatch &&
-          srnMatch &&
-          batchMatch &&
-          dateMatch &&
-          // statusMatch &&
-          invoiceNoMatch
+          vendorMatch && srnMatch && batchMatch && dateMatch && invoiceNoMatch
         );
       })
     : [];
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    vendorSearch,
-    srnSearch,
-    batchSearch,
-    selectedDate,
-    // selectedStatus,
-    searchInvoiceNo,
-  ]);
+  }, [vendorSearch, srnSearch, batchSearch, selectedDate, searchInvoiceNo]);
 
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -180,14 +154,12 @@ console.log("lala",selectedRowData)
     const selectedInvoice = invoicesData[globalIndex];
     const batchNo = selectedInvoice?.batchNo;
 
-   
-
     try {
       const reason = newStatus === "Rejected" ? "Some rejection reason" : "";
 
       const response = await updateBatchInvoiceStatus({
         batchNo,
-        status: newStatus,
+        invoiceStatus: newStatus,
         reason,
       });
 
@@ -197,7 +169,7 @@ console.log("lala",selectedRowData)
             ? {
                 ...item,
                 invoiceStatus: newStatus,
-                financeStatus: newStatus === "Approved" ? "Submitted" : "",
+                financeStatus: newStatus === "Approved" ? "Approved" : "",
               }
             : item
         )
@@ -225,22 +197,21 @@ console.log("lala",selectedRowData)
 
       const response = await updateBatchFinanceStatus({
         batchNo,
-        status: newStatus,
+        financeStatus: newStatus,
         reason,
       });
+setInvoicesData((prev) =>
+  prev.map((item, i) =>
+    i === globalIndex
+      ? {
+          ...item,
+          financeStatus: newStatus,
+          invoiceStatus: newStatus !== "Approved" ? "Hold" : item.invoiceStatus,
+        }
+      : item
+  )
+);
 
-      setInvoicesData((prev) =>
-        prev.map((item, i) =>
-          i === globalIndex
-            ? {
-                ...item,
-                financeStatus: newStatus,
-                invoiceStatus:
-                  newStatus !== "Approved" ? "Hold" : item.invoiceStatus,
-              }
-            : item
-        )
-      );
 
       toast.success("Finance status updated successfully!", {
         position: "top-right",
@@ -258,8 +229,7 @@ console.log("lala",selectedRowData)
     const getData = async () => {
       setLoading(true);
       try {
-        const data = await GetAllGetQueryData();
-        console.log("This is data ",data)
+        const data = await GetAllRejectedlBatchDatafromSubmit();
         if (Array.isArray(data.dataItems)) {
           setInvoicesData(data.dataItems);
         } else {
@@ -276,29 +246,13 @@ console.log("lala",selectedRowData)
     getData();
   }, []);
 
-  // console.log(currentInvoices, "current Invoice");
   return (
     <div>
-      {/* <Header /> */}
       <ToastContainer />
       <div className="container mt-4">
         <div className="netwrok_table_main_content">
           <div className="d-flex justify-content-between  network_filter_div">
-            <h5 className="fw-bold m-0">Query Cases</h5>
-            {/* <button
-              className="btn btn-primary d-flex align-items-center"
-              style={{
-                backgroundColor: "#8000d7", // Custom purple
-                border: "none",
-                padding: "10px 20px",
-                borderRadius: "8px",
-                fontWeight: "500",
-                fontSize: "16px",
-              }}
-              onClick={() => setShowHoldModal(true)}>
-              <FaCirclePlus className="me-2" />
-              Create Batch
-            </button> */}
+            <h5 className="fw-bold m-0">Rejected Cases</h5>
           </div>
           <div className="d-flex justify-content-between  network_filter_div">
             <div className="d-flex justify-content-between align-items-center all_search_input">
@@ -378,7 +332,6 @@ console.log("lala",selectedRowData)
             </div>
           </div>
           {loading ? (
-            // <div className="text-center mt-4">Loading invoices...</div>
             <div
               className="d-flex justify-content-center align-items-center"
               style={{ height: "200px" }}
@@ -397,12 +350,10 @@ console.log("lala",selectedRowData)
                 <thead style={{ backgroundColor: "#EEF4FF" }}>
                   <tr className="text-dark fw-semibold table_th_border">
                     <th className="border-start">View</th>
-                    
                     <th style={{ whiteSpace: "nowrap" }}>Batch No</th>
                     <th style={{ whiteSpace: "nowrap" }}>Vendor Name</th>
                     <th style={{ whiteSpace: "nowrap" }}>Approval Date</th>
                     <th style={{ whiteSpace: "nowrap" }}>Case Count</th>
-                 
                     <th style={{ whiteSpace: "nowrap" }}>Invoice No</th>
                     <th style={{ whiteSpace: "nowrap" }}>Invoice Date</th>
                     <th style={{ whiteSpace: "nowrap" }}>Invoice Amount</th>
@@ -427,16 +378,17 @@ console.log("lala",selectedRowData)
                       className="text-center border-bottom network_td_item"
                     >
                       <td className="border-start align-middle">
-                        <FaEye
-                          className="text-purple review_fa_eye"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => {
-                            setSelectedRowData(invoice); // set the row data
-                            setShowHoldModal(true); // open popup
-                          }}
-                        />
+                        <IconButton
+                          onClick={() => handleViewRow(invoice)} // Add onClick handler
+                          aria-label={`View details for batch ${invoice.batchNo}`}
+                        >
+                          <FaEye
+                            className="text-purple review_fa_eye"
+                            style={{ cursor: "pointer" }}
+                            size={20}
+                          />
+                        </IconButton>
                       </td>
-                     
                       <td className="align-middle">
                         {invoice.batchNo ?? "--"}
                       </td>
@@ -446,20 +398,6 @@ console.log("lala",selectedRowData)
                       <td className="align-middle">
                         {invoice.approvalDate ?? "--"}
                       </td>
-                      {/* <td className="align-middle">
-                        {invoice.batchCreationDate
-                          ? new Date(
-                              invoice.batchCreationDate
-                            ).toLocaleDateString("en-GB")
-                          : "--"}
-                      </td>
-                      <td className="align-middle">
-                        {invoice.batchClosureDate
-                          ? new Date(
-                              invoice.batchClosureDate
-                            ).toLocaleDateString("en-GB")
-                          : "--"}
-                      </td> */}
                       <td className="align-middle">
                         {invoice.caseCount ?? "--"}
                       </td>
@@ -518,7 +456,6 @@ console.log("lala",selectedRowData)
                       </td>
                       <td className="align-middle">{invoice.date ?? "--"}</td>
                       <td className="align-middle">{invoice.issue ?? "--"}</td>
-                      {/* Invoice Status Dropdown */}
                       <td className="align-middle">
                         {invoice.invoiceStatus !== "Approved" ? (
                           <Dropdown className="network_table_main">
@@ -556,8 +493,6 @@ console.log("lala",selectedRowData)
                           </div>
                         )}
                       </td>
-
-                      {/* Finance Status Dropdown */}
                       <td className="align-middle border-end">
                         <div className="network_table_main">
                           <span
@@ -585,7 +520,7 @@ console.log("lala",selectedRowData)
             >
               Previous
             </button>
-            <span className="page-info ">
+            <span className="page-info">
               Page {currentPage} of {totalPages}
             </span>
             <button
@@ -598,7 +533,7 @@ console.log("lala",selectedRowData)
           </div>
         </div>
       </div>
-      <QuaryPopUp
+      <RejectPopUp
         show={showHoldModal}
         handleClose={() => setShowHoldModal(false)}
         selectedData={selectedRowData}
@@ -607,4 +542,4 @@ console.log("lala",selectedRowData)
   );
 }
 
-export default HoldCase;
+export default Reajectedcases;
